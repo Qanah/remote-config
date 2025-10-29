@@ -144,13 +144,15 @@ class ExperimentController extends Controller
 
         $validated['is_active'] = $request->has('is_active');
 
-        // Check for conflicts
+        // Check for conflicts with overlapping targeting
         $experiment = new Experiment($validated);
         if (config('remote-config.validation.prevent_overlapping_experiments', true) && $experiment->hasConflict()) {
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'An active experiment with overlapping targeting criteria already exists');
+                ->withErrors([
+                    'type' => 'An active experiment already exists with overlapping platforms, countries, and languages for type: ' . $validated['type']
+                ]);
         }
 
         $experiment = Experiment::create($validated);
@@ -240,6 +242,17 @@ class ExperimentController extends Controller
         }
 
         $validated['is_active'] = $request->has('is_active');
+
+        // Check for conflicts with overlapping targeting
+        $experiment->fill($validated);
+        if (config('remote-config.validation.prevent_overlapping_experiments', true) && $experiment->hasConflict()) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors([
+                    'type' => 'An active experiment already exists with overlapping platforms, countries, and languages for type: ' . $validated['type']
+                ]);
+        }
 
         $experiment->update($validated);
 

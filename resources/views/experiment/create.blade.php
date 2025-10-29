@@ -20,7 +20,18 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('remote-config.experiments.store') }}" class="space-y-6" x-data="{ selectedType: '{{ old('type') }}' }">
+    @php
+        $oldFlows = old('flows') ?: [['id' => '', 'ratio' => 50], ['id' => '', 'ratio' => 50]];
+    @endphp
+    <form method="POST" action="{{ route('remote-config.experiments.store') }}" class="space-y-6"
+        x-data="{
+            selectedType: {{ json_encode(old('type', '')) }},
+            flows: {{ json_encode($oldFlows) }},
+            availableFlows: {{ json_encode($flows) }},
+            get total() { return this.flows.reduce((sum, flow) => sum + parseInt(flow.ratio || 0), 0); },
+            get isValid() { return this.total === 100; },
+            getFilteredFlows() { return this.availableFlows.filter(f => f.type === this.selectedType); }
+        }">
         @csrf
 
         <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
@@ -116,15 +127,7 @@
                         <p class="mt-1 text-sm text-gray-500">Only users created after this date will be included</p>
                     </div>
 
-                    <div class="sm:col-span-full" x-data="{
-                        flows: [{ id: '', ratio: 50 }, { id: '', ratio: 50 }],
-                        get total() {
-                            return this.flows.reduce((sum, flow) => sum + parseInt(flow.ratio || 0), 0);
-                        },
-                        get isValid() {
-                            return this.total === 100;
-                        }
-                    }">
+                    <div class="sm:col-span-full">
                         <label class="block text-sm font-medium leading-6 text-gray-900 mb-2">Experiment Variants (Flows)</label>
                         <div class="mb-3 p-3 rounded-lg border" :class="isValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
                             <div class="flex items-center justify-between">
@@ -134,18 +137,18 @@
                                 <span class="text-xs" :class="isValid ? 'text-green-600' : 'text-red-600'" x-text="isValid ? '✓ Valid' : '✗ Must equal 100%'"></span>
                             </div>
                         </div>
-                        <template x-for="(flow, index) in flows" :key="index">
+                        <template x-for="(flowItem, index) in flows" :key="index">
                             <div class="flex gap-4 mb-3">
                                 <div class="flex-1">
-                                    <select :name="'flows[' + index + '][id]'" required class="block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2" :disabled="!selectedType">
+                                    <select :name="'flows[' + index + '][id]'" x-model="flowItem.id" required class="block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2" :disabled="!selectedType">
                                         <option value="">Select Flow</option>
-                                        @foreach($flows as $flow)
-                                            <option value="{{ $flow->id }}" x-show="selectedType === '{{ $flow->type }}'">FLOW {{ $flow->type }} #{{ $flow->id }} {{ $flow->variant_name }}</option>
-                                        @endforeach
+                                        <template x-for="availFlow in getFilteredFlows()" :key="availFlow.id">
+                                            <option :value="availFlow.id" x-text="'FLOW ' + availFlow.type + ' #' + availFlow.id + ' ' + availFlow.variant_name"></option>
+                                        </template>
                                     </select>
                                 </div>
                                 <div class="w-32">
-                                    <input type="number" :name="'flows[' + index + '][ratio]'" x-model="flow.ratio" required min="1" max="100" placeholder="Ratio %" class="block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
+                                    <input type="number" :name="'flows[' + index + '][ratio]'" x-model="flowItem.ratio" required min="1" max="100" placeholder="Ratio %" class="block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
                                 </div>
                                 <button type="button" @click="flows.length > 2 && flows.splice(index, 1)" :disabled="flows.length <= 2" class="px-3 py-2 text-sm text-red-600 hover:text-red-800 disabled:text-gray-400">Remove</button>
                             </div>

@@ -112,7 +112,7 @@
                     <div class="sm:col-span-full">
                         <label for="user_created_after_date" class="block text-sm font-medium text-gray-700">User Created After Date (Optional)</label>
                         <div class="mt-1">
-                            <input type="date" name="user_created_after_date" id="user_created_after_date" value="{{ old('user_created_after_date', $experiment->user_created_after_date) }}" class="block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
+                            <input type="date" name="user_created_after_date" id="user_created_after_date" value="{{ old('user_created_after_date', $experiment->user_created_after_date?->format('Y-m-d')) }}" class="block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
                         </div>
                         <p class="mt-1 text-sm text-gray-500">Only users created after this date will be included</p>
                     </div>

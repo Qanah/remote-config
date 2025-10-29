@@ -129,12 +129,67 @@ class Experiment extends Model
 
     /**
      * Check if this experiment conflicts with another active experiment.
-     * Note: Multiple overlapping experiments are now allowed.
-     * The system will select the most specific one at runtime.
+     * Prevents any overlap in platforms, countries, and languages for the same type.
      */
     public function hasConflict(): bool
     {
-        // Allow overlapping experiments - specificity-based selection handles conflicts
+        $platforms = $this->platforms ?? [];
+        $countries = $this->countries ?? [];
+        $languages = $this->languages ?? [];
+
+        if (empty($platforms) || empty($countries) || empty($languages)) {
+            return false;
+        }
+
+        $query = self::where('is_active', true)
+            ->where('type', $this->type);
+
+        // Exclude current experiment when updating
+        if ($this->exists) {
+            $query->where('id', '!=', $this->id);
+        }
+
+        $isSqlite = config('database.default') === 'sqlite';
+
+        // Build platform conditions (OR logic - match ANY platform)
+        $platformConditions = [];
+        foreach ($platforms as $platform) {
+            if ($isSqlite) {
+                $platformConditions[] = "platforms LIKE '%" . addslashes($platform) . "%'";
+            } else {
+                $platformConditions[] = "JSON_SEARCH(platforms, 'one', '" . addslashes($platform) . "') is not null";
+            }
+        }
+
+        // Build country conditions (OR logic - match ANY country)
+        $countryConditions = [];
+        foreach ($countries as $country) {
+            if ($isSqlite) {
+                $countryConditions[] = "countries LIKE '%" . addslashes($country) . "%'";
+            } else {
+                $countryConditions[] = "JSON_SEARCH(countries, 'one', '" . addslashes($country) . "') is not null";
+            }
+        }
+
+        // Build language conditions (OR logic - match ANY language)
+        $languageConditions = [];
+        foreach ($languages as $language) {
+            if ($isSqlite) {
+                $languageConditions[] = "languages LIKE '%" . addslashes($language) . "%'";
+            } else {
+                $languageConditions[] = "JSON_SEARCH(languages, 'one', '" . addslashes($language) . "') is not null";
+            }
+        }
+
+        // Apply all conditions: (platform1 OR platform2) AND (country1 OR country2) AND (language1 OR language2)
+        if (!empty($platformConditions) && !empty($countryConditions) && !empty($languageConditions)) {
+            $query->whereRaw('(' . implode(' OR ', $platformConditions) . ')')
+                  ->whereRaw('(' . implode(' OR ', $countryConditions) . ')')
+                  ->whereRaw('(' . implode(' OR ', $languageConditions) . ')');
+
+            return $query->exists();
+        }
+
         return false;
     }
 
