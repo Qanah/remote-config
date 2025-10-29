@@ -11,32 +11,38 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('remote-config.testing.store') }}" class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+    <form method="POST" action="{{ route('remote-config.testing.store') }}"
+          class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
         @csrf
         <div class="px-4 py-6 sm:p-8">
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-4">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-4 items-end">
                 <div>
                     <label for="ip" class="block text-sm font-medium text-gray-900">IP Address</label>
-                    <input type="text" name="ip" id="ip" required placeholder="192.168.1.1" class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                    <input type="text" name="ip" id="ip" required placeholder="192.168.1.1" class="mt-2 block w-full rounded-md border-2 border-gray-400 text-gray-900 shadow-sm text-base px-3 py-2 focus:border-primary-500 focus:ring-2 focus:ring-primary-500">
                 </div>
+
                 <div>
                     <label for="type" class="block text-sm font-medium text-gray-900">Type</label>
-                    <select id="type" name="type" required class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                    <select id="type" name="type" required class="mt-2 block w-full rounded-md border-2 border-gray-400 text-gray-900 shadow-sm text-base px-3 py-2 focus:border-primary-500 focus:ring-2 focus:ring-primary-500">
                         @foreach($flowTypes as $key => $label)
                             <option value="{{ $key }}">{{ $label }}</option>
                         @endforeach
                     </select>
                 </div>
+
                 <div>
                     <label for="flow_id" class="block text-sm font-medium text-gray-900">Flow</label>
-                    <select id="flow_id" name="flow_id" required class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                    <select id="flow_id" name="flow_id" required class="mt-2 block w-full rounded-md border-2 border-gray-400 text-gray-900 shadow-sm text-base px-3 py-2 focus:border-primary-500 focus:ring-2 focus:ring-primary-500">
                         @foreach($flows as $flow)
                             <option value="{{ $flow->id }}">Flow #{{ $flow->id }} - {{ $flow->type }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="flex items-end">
-                    <button type="submit" class="w-full rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Override</button>
+
+                <div>
+                    <button type="submit" class="mt-8 w-full rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                        Add Override
+                    </button>
                 </div>
             </div>
         </div>

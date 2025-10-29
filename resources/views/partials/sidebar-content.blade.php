@@ -9,7 +9,7 @@
 @endphp
 
 <div class="flex h-16 shrink-0 items-center {{ request()->routeIs('remote-config.*') ? 'border-b border-gray-200' : '' }}">
-    <div class="flex items-center">
+    <a href="{{ route(config('remote-config.admin.home_route', 'remote-config.experiments.index')) }}" class="flex items-center hover:opacity-80 transition-opacity duration-200 cursor-pointer">
         <div class="flex-shrink-0">
             <div class="h-10 w-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
                 <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -21,7 +21,7 @@
             <h1 class="text-xl font-bold text-gray-900">Remote Config</h1>
             <p class="text-sm text-gray-500">Experiments & A/B Testing</p>
         </div>
-    </div>
+    </a>
 </div>
 
 <nav class="flex flex-1 flex-col">

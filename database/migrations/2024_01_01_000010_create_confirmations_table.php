@@ -18,7 +18,11 @@ return new class extends Migration
         if (!Schema::hasTable($tableName)) {
             Schema::create($tableName, function (Blueprint $table) use ($experimentsTable) {
                 $table->id();
-                $table->morphs('experimentable'); // Polymorphic relation to user
+                // Polymorphic relation to user with custom short index name
+                $table->string('experimentable_type');
+                $table->unsignedBigInteger('experimentable_id');
+                $table->index(['experimentable_type', 'experimentable_id'], 'confirmations_experimentable_idx');
+
                 $table->foreignId('experiment_id')->nullable()->constrained($experimentsTable)->onDelete('set null');
                 $table->string('experiment_name');
                 $table->string('status')->default('pending')->index();

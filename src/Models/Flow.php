@@ -14,9 +14,9 @@ class Flow extends Model
 
     protected $fillable = [
         'type',
+        'variant_name',
         'content',
         'is_active',
-        'overwrite_id',
     ];
 
     protected $casts = [

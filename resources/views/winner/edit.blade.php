@@ -29,7 +29,7 @@
                 <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                     <div class="sm:col-span-3">
                         <label for="type" class="block text-sm font-medium text-gray-700">Type *</label>
-                        <select id="type" name="type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
+                        <select id="type" name="type" required class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
                             @foreach($flowTypes as $key => $label)
                                 <option value="{{ $key }}" {{ $winner->type === $key ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
@@ -37,7 +37,7 @@
                     </div>
                     <div class="sm:col-span-3">
                         <label for="platform" class="block text-sm font-medium text-gray-700">Platform *</label>
-                        <select id="platform" name="platform" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
+                        <select id="platform" name="platform" required class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
                             @foreach($platforms as $key => $label)
                                 <option value="{{ $key }}" {{ $winner->platform === $key ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
@@ -45,7 +45,7 @@
                     </div>
                     <div class="sm:col-span-3">
                         <label for="country_code" class="block text-sm font-medium text-gray-700">Country *</label>
-                        <select id="country_code" name="country_code" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
+                        <select id="country_code" name="country_code" required class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
                             @foreach($countries as $key => $label)
                                 <option value="{{ $key }}" {{ $winner->country_code === $key ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
@@ -53,7 +53,7 @@
                     </div>
                     <div class="sm:col-span-3">
                         <label for="language" class="block text-sm font-medium text-gray-700">Language *</label>
-                        <select id="language" name="language" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
+                        <select id="language" name="language" required class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
                             @foreach($languages as $key => $label)
                                 <option value="{{ $key }}" {{ $winner->language === $key ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
@@ -61,7 +61,7 @@
                     </div>
                     <div class="sm:col-span-full">
                         <label for="flow_id" class="block text-sm font-medium text-gray-700">Flow (Optional)</label>
-                        <select id="flow_id" name="flow_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
+                        <select id="flow_id" name="flow_id" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
                             <option value="">None - Use custom content</option>
                             @foreach($flows as $flow)
                                 <option value="{{ $flow->id }}" {{ $winner->flow_id == $flow->id ? 'selected' : '' }}>Flow #{{ $flow->id }} - {{ $flow->type }}</option>
@@ -72,14 +72,18 @@
                     <div class="sm:col-span-full">
                         <label for="content" class="block text-sm font-medium text-gray-700">Content (JSON) *</label>
                         <div class="mt-1">
-                            <div id="jsoneditor" style="height: 500px;"></div>
-                            <textarea name="content" id="content" class="hidden" required>{{ json_encode($winner->content) }}</textarea>
+                            @include('remote-config::components.jsoneditor', [
+                                'name' => 'content',
+                                'value' => $winner->content,
+                                'height' => '500px',
+                                'required' => true
+                            ])
                         </div>
                         <p class="mt-2 text-sm text-gray-500">Configure your JSON settings using the visual editor above.</p>
                     </div>
                     <div class="sm:col-span-full">
                         <div class="flex items-center">
-                            <input id="is_active" name="is_active" type="checkbox" {{ $winner->is_active ? 'checked' : '' }} class="h-4 w-4 rounded border-gray-300 text-primary-600">
+                            <input id="is_active" name="is_active" type="checkbox" {{ $winner->is_active ? 'checked' : '' }} class="h-4 w-4 rounded border-2 border-gray-400 text-primary-600">
                             <label for="is_active" class="ml-3 text-sm text-gray-900">Active</label>
                         </div>
                     </div>
@@ -93,54 +97,3 @@
     </form>
 </div>
 @endsection
-
-@push('styles')
-<link href="https://cdn.jsdelivr.net/npm/jsoneditor@{{ config('remote-config.json_editor.cdn_version', '9.10.0') }}/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
-@endpush
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/jsoneditor@{{ config('remote-config.json_editor.cdn_version', '9.10.0') }}/dist/jsoneditor.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize JSONEditor
-        const container = document.getElementById('jsoneditor');
-    const textarea = document.getElementById('content');
-
-        if (!container || !textarea) {
-            console.error('JSONEditor container or textarea not found');
-            return;
-        }
-
-    const options = {
-        mode: '{{ config('remote-config.json_editor.mode', 'tree') }}',
-        modes: {!! json_encode(config('remote-config.json_editor.modes', ['tree', 'code', 'form', 'text', 'view'])) !!},
-        onChangeText: function (jsonString) {
-            textarea.value = jsonString;
-        }
-    };
-
-    const editor = new JSONEditor(container, options);
-
-    // Set initial JSON
-    try {
-        const initialJson = JSON.parse(textarea.value);
-        editor.set(initialJson);
-    } catch (e) {
-        editor.set({});
-    }
-
-    // Update textarea on form submit
-    document.querySelector('form').addEventListener('submit', function(e) {
-        try {
-            const json = editor.get();
-            textarea.value = JSON.stringify(json);
-            console.log('Form submitting with JSON:', json);
-        } catch (err) {
-            e.preventDefault();
-            alert('Invalid JSON: ' + err.message);
-            console.error('JSON validation error:', err);
-        }
-    });
-});
-</script>
-@endpush

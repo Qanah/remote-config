@@ -47,7 +47,7 @@
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
                     <div>
                         <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
-                        <select id="type" name="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                        <select id="type" name="type" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
                             <option value="">All Types</option>
                             @foreach($flowTypes as $key => $label)
                                 <option value="{{ $key }}" {{ request('type') === $key ? 'selected' : '' }}>{{ $label }}</option>
@@ -56,7 +56,7 @@
                     </div>
                     <div>
                         <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select id="status" name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                        <select id="status" name="status" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
                             <option value="">All</option>
                             <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
@@ -64,7 +64,7 @@
                     </div>
                     <div>
                         <label for="search" class="block text-sm font-medium text-gray-700">Search</label>
-                        <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="ID, type, or content..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                        <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="ID, type, or content..." class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
                     </div>
                     <div class="flex items-end">
                         <button type="submit" class="inline-flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
@@ -83,6 +83,7 @@
                 <tr>
                     <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">ID</th>
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
+                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Name</th>
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Content Preview</th>
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Updated</th>
@@ -101,6 +102,9 @@
                         <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
                             {{ $flow->type }}
                         </span>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
+                        {{ $flow->variant_name }}
                     </td>
                     <td class="px-3 py-4 text-sm text-gray-500 max-w-md truncate">
                         <code class="text-xs bg-gray-100 px-2 py-1 rounded">
@@ -125,7 +129,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-3 py-8 text-center text-sm text-gray-500">
+                    <td colspan="7" class="px-3 py-8 text-center text-sm text-gray-500">
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>

@@ -50,7 +50,7 @@
                     <!-- Type -->
                     <div class="sm:col-span-3">
                         <label for="type" class="block text-sm font-medium text-gray-700">Type *</label>
-                        <select id="type" name="type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
+                        <select id="type" name="type" required class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
                             <option value="">Select type...</option>
                             @foreach($flowTypes as $key => $label)
                                 <option value="{{ $key }}" {{ old('type') === $key ? 'selected' : '' }}>{{ $label }}</option>
@@ -61,12 +61,12 @@
                         @enderror
                     </div>
 
-                    <!-- Overwrite ID -->
+                    <!-- Variant Name -->
                     <div class="sm:col-span-3">
-                        <label for="overwrite_id" class="block text-sm font-medium text-gray-700">Overwrite ID</label>
-                        <input type="number" name="overwrite_id" id="overwrite_id" value="{{ old('overwrite_id') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
-                        <p class="mt-2 text-sm text-gray-500">Optional. Allows multiple experiments on same base config.</p>
-                        @error('overwrite_id')
+                        <label for="variant_name" class="block text-sm font-medium text-gray-700">Variant Name *</label>
+                        <input type="text" name="variant_name" id="variant_name" value="{{ old('variant_name') }}" required class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2" placeholder="e.g., control, variant-a">
+                        <p class="mt-2 text-sm text-gray-500">Unique name for this variant within the same type (e.g., control, variant-a, variant-b).</p>
+                        @error('variant_name')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -74,7 +74,7 @@
                     <!-- Status -->
                     <div class="sm:col-span-6">
                         <div class="flex items-center">
-                            <input id="is_active" name="is_active" type="checkbox" {{ old('is_active', true) ? 'checked' : '' }} class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
+                            <input id="is_active" name="is_active" type="checkbox" {{ old('is_active', true) ? 'checked' : '' }} class="h-4 w-4 rounded border-2 border-gray-400 text-primary-600 focus:ring-primary-600">
                             <label for="is_active" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
                                 Active
                             </label>
@@ -86,8 +86,12 @@
                     <div class="sm:col-span-6">
                         <label for="content" class="block text-sm font-medium text-gray-700">JSON Content *</label>
                         <div class="mt-1">
-                            <div id="jsoneditor" style="height: 500px;"></div>
-                            <textarea name="content" id="content" class="hidden" required>{{ old('content', '{}') }}</textarea>
+                            @include('remote-config::components.jsoneditor', [
+                                'name' => 'content',
+                                'value' => old('content', '{}'),
+                                'height' => '500px',
+                                'required' => true
+                            ])
                         </div>
                         <p class="mt-2 text-sm text-gray-500">Configure your JSON settings using the visual editor above.</p>
                         @error('content')
@@ -108,57 +112,3 @@
     </form>
 </div>
 @endsection
-
-@push('styles')
-<link href="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
-@endpush
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize JSONEditor
-        const container = document.getElementById('jsoneditor');
-        const textarea = document.getElementById('content');
-
-        if (!container || !textarea) {
-            console.error('JSONEditor container or textarea not found');
-            return;
-        }
-
-        const options = {
-            mode: 'tree',
-            modes: ['tree', 'code', 'form', 'text', 'view'],
-            onChangeText: function (jsonString) {
-                textarea.value = jsonString;
-            }
-        };
-
-        const editor = new JSONEditor(container, options);
-
-        // Set initial JSON
-        try {
-            const initialJson = JSON.parse(textarea.value);
-            editor.set(initialJson);
-        } catch (e) {
-            editor.set({});
-        }
-
-        // Update textarea on form submit
-        const form = document.querySelector('form[action*="flows.store"]');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                try {
-                    const json = editor.get();
-                    textarea.value = JSON.stringify(json);
-                    console.log('Form submitting with JSON:', json);
-                } catch (err) {
-                    e.preventDefault();
-                    alert('Invalid JSON: ' + err.message);
-                    console.error('JSON validation error:', err);
-                }
-            });
-        }
-    });
-</script>
-@endpush

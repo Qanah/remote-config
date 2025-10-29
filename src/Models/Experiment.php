@@ -14,7 +14,6 @@ class Experiment extends Model
     protected $fillable = [
         'name',
         'type',
-        'overwrite_id',
         'platforms',
         'countries',
         'languages',
@@ -76,19 +75,15 @@ class Experiment extends Model
 
     /**
      * Get active experiments for specific criteria.
+     * Returns the most specific matching experiment (fewer targets = more specific).
      */
     public static function getActiveExperiment(
         string $type,
-        ?int $overwriteId = null,
         ?string $platform = null,
         ?string $country = null,
         ?string $language = null
     ): ?self {
         $query = self::where('is_active', true)->where('type', $type);
-
-        if ($overwriteId !== null) {
-            $query->where('overwrite_id', $overwriteId);
-        }
 
         $isSqlite = config('database.default') === 'sqlite';
 
@@ -116,33 +111,31 @@ class Experiment extends Model
             }
         }
 
-        return $query->first();
+        // Get all matching experiments and sort by specificity
+        $experiments = $query->get();
+
+        if ($experiments->isEmpty()) {
+            return null;
+        }
+
+        // Return the most specific experiment (fewest targets = most specific)
+        // Specificity score = total number of targeted platforms + countries + languages
+        return $experiments->sortBy(function ($experiment) {
+            return count($experiment->platforms ?? []) +
+                   count($experiment->countries ?? []) +
+                   count($experiment->languages ?? []);
+        })->first();
     }
 
     /**
      * Check if this experiment conflicts with another active experiment.
+     * Note: Multiple overlapping experiments are now allowed.
+     * The system will select the most specific one at runtime.
      */
     public function hasConflict(): bool
     {
-        $query = self::where('is_active', true)
-            ->where('type', $this->type)
-            ->where('overwrite_id', $this->overwrite_id)
-            ->where('id', '!=', $this->id ?? 0);
-
-        $isSqlite = config('database.default') === 'sqlite';
-
-        // Check for overlapping platforms, countries, and languages
-        if (!empty($this->platforms)) {
-            foreach ($this->platforms as $platform) {
-                if ($isSqlite) {
-                    $query->orWhere('platforms', 'LIKE', '%"' . $platform . '"%');
-                } else {
-                    $query->orWhereRaw("JSON_SEARCH(platforms, 'one', ?) is not null", [$platform]);
-                }
-            }
-        }
-
-        return $query->exists();
+        // Allow overlapping experiments - specificity-based selection handles conflicts
+        return false;
     }
 
     /**

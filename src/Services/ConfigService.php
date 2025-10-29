@@ -18,6 +18,35 @@ class ConfigService
     }
 
     /**
+     * Extract an attribute from experimentable model using configured mapping.
+     *
+     * @param mixed $experimentable
+     * @param string $attributeName
+     * @param array $attributes
+     * @return mixed
+     */
+    protected function extractAttribute($experimentable, string $attributeName, array $attributes = [])
+    {
+        // First check if explicitly provided in attributes array
+        if (isset($attributes[$attributeName])) {
+            return $attributes[$attributeName];
+        }
+
+        // Get attribute mapping from config
+        $mapping = config("remote-config.attribute_mapping.{$attributeName}", []);
+
+        // Try each mapped field in order
+        foreach ($mapping as $fieldName) {
+            $value = $experimentable->getAttribute($fieldName);
+            if ($value !== null) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get configuration for a user/entity.
      *
      * @param mixed $experimentable The user/entity
@@ -53,9 +82,9 @@ class ConfigService
         }
 
         // Check for winner configuration (second priority)
-        $platform = $attributes['platform'] ?? $experimentable->getAttribute('platform') ?? $experimentable->getAttribute('os');
-        $country = $attributes['country'] ?? $experimentable->getAttribute('country_code') ?? $experimentable->getAttribute('geo_country_code');
-        $language = $attributes['language'] ?? $experimentable->getAttribute('language') ?? $experimentable->getAttribute('lang');
+        $platform = $this->extractAttribute($experimentable, 'platform', $attributes);
+        $country = $this->extractAttribute($experimentable, 'country', $attributes);
+        $language = $this->extractAttribute($experimentable, 'language', $attributes);
 
         if ($platform && $country && $language) {
             $winner = null;
@@ -92,14 +121,12 @@ class ConfigService
      * @param mixed $experimentable
      * @param string $type
      * @param array $attributes
-     * @param int|null $overwriteId
      * @return ExperimentAssignment|null
      */
     public function getOrCreateAssignment(
         $experimentable,
         string $type,
-        array $attributes = [],
-        ?int $overwriteId = null
+        array $attributes = []
     ): ?ExperimentAssignment {
         // Check for existing assignment
         $existing = ExperimentAssignment::where('experimentable_type', get_class($experimentable))
@@ -114,9 +141,9 @@ class ConfigService
         }
 
         // Get user attributes
-        $platform = $attributes['platform'] ?? $experimentable->getAttribute('platform') ?? $experimentable->getAttribute('os');
-        $country = $attributes['country'] ?? $experimentable->getAttribute('country_code') ?? $experimentable->getAttribute('geo_country_code');
-        $language = $attributes['language'] ?? $experimentable->getAttribute('language') ?? $experimentable->getAttribute('lang');
+        $platform = $this->extractAttribute($experimentable, 'platform', $attributes);
+        $country = $this->extractAttribute($experimentable, 'country', $attributes);
+        $language = $this->extractAttribute($experimentable, 'language', $attributes);
 
         if (!$platform || !$country || !$language) {
             return null;
@@ -131,7 +158,6 @@ class ConfigService
         // Find matching active experiment
         $experiment = Experiment::getActiveExperiment(
             $type,
-            $overwriteId,
             $platform,
             $country,
             $language

@@ -17,7 +17,11 @@ return new class extends Migration
         if (!Schema::hasTable($tableName)) {
             Schema::create($tableName, function (Blueprint $table) {
                 $table->id();
-                $table->morphs('experimentable'); // Polymorphic relation to user
+                // Polymorphic relation to user with custom short index name
+                $table->string('experimentable_type');
+                $table->unsignedBigInteger('experimentable_id');
+                $table->index(['experimentable_type', 'experimentable_id'], 'validation_issues_experimentable_idx');
+
                 $table->string('platform')->nullable()->index();
                 $table->string('path')->index();
                 $table->text('invalid_value');

@@ -110,6 +110,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Attribute Mapping
+    |--------------------------------------------------------------------------
+    |
+    | Maps the standard attribute names to possible field names on your
+    | experimentable model. The system will try each field in order until
+    | it finds one that exists on the model.
+    |
+    */
+
+    'attribute_mapping' => [
+        'platform' => ['platform', 'os'],
+        'country' => ['country_code', 'geo_country_code'],
+        'language' => ['language', 'lang'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Flow Types
     |--------------------------------------------------------------------------
     |
@@ -233,6 +250,7 @@ return [
         'logo' => null, // URL to logo image
         'show_stats' => true,
         'date_format' => 'Y-m-d H:i:s',
+        'home_route' => 'remote-config.experiments.index', // Default route when clicking title
     ],
 
     /*

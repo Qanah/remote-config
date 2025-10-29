@@ -28,6 +28,7 @@ class ExperimentController extends Controller
     public function index(Request $request): View
     {
         $query = Experiment::query()->with('flows')->orderBy('created_at', 'desc');
+        $isSqlite = config('database.default') === 'sqlite';
 
         // Filter by type
         if ($request->filled('type')) {
@@ -38,6 +39,36 @@ class ExperimentController extends Controller
         if ($request->filled('status')) {
             $isActive = $request->input('status') === 'active';
             $query->where('is_active', $isActive);
+        }
+
+        // Filter by platform
+        if ($request->filled('platform')) {
+            $platform = $request->input('platform');
+            if ($isSqlite) {
+                $query->where('platforms', 'LIKE', '%"' . $platform . '"%');
+            } else {
+                $query->whereRaw("JSON_SEARCH(platforms, 'one', ?) is not null", [$platform]);
+            }
+        }
+
+        // Filter by country
+        if ($request->filled('country')) {
+            $country = $request->input('country');
+            if ($isSqlite) {
+                $query->where('countries', 'LIKE', '%"' . $country . '"%');
+            } else {
+                $query->whereRaw("JSON_SEARCH(countries, 'one', ?) is not null", [$country]);
+            }
+        }
+
+        // Filter by language
+        if ($request->filled('language')) {
+            $language = $request->input('language');
+            if ($isSqlite) {
+                $query->where('languages', 'LIKE', '%"' . $language . '"%');
+            } else {
+                $query->whereRaw("JSON_SEARCH(languages, 'one', ?) is not null", [$language]);
+            }
         }
 
         // Search
@@ -52,6 +83,9 @@ class ExperimentController extends Controller
         $experiments = $query->paginate(config('remote-config.admin.per_page', 20));
 
         $flowTypes = config('remote-config.flow_types', []);
+        $platforms = config('remote-config.targeting.platforms', []);
+        $countries = config('remote-config.targeting.countries', []);
+        $languages = config('remote-config.targeting.languages', []);
 
         $stats = [
             'total' => Experiment::count(),
@@ -59,7 +93,7 @@ class ExperimentController extends Controller
             'inactive' => Experiment::where('is_active', false)->count(),
         ];
 
-        return view('remote-config::experiment.index', compact('experiments', 'flowTypes', 'stats'));
+        return view('remote-config::experiment.index', compact('experiments', 'flowTypes', 'platforms', 'countries', 'languages', 'stats'));
     }
 
     /**
@@ -94,11 +128,19 @@ class ExperimentController extends Controller
             'countries' => 'required|array|min:1',
             'languages' => 'required|array|min:1',
             'user_created_after_date' => 'nullable|date',
-            'overwrite_id' => 'nullable|integer',
             'flows' => 'required|array|min:2',
             'flows.*.id' => 'required|exists:' . (config('remote-config.table_prefix', '') . 'flows') . ',id',
             'flows.*.ratio' => 'required|integer|min:1|max:100',
         ]);
+
+        // Validate that ratios add up to 100%
+        $totalRatio = array_sum(array_column($validated['flows'], 'ratio'));
+        if ($totalRatio !== 100) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['flows' => "The total of all ratios must equal 100%. Current total: {$totalRatio}%"]);
+        }
 
         $validated['is_active'] = $request->has('is_active');
 
@@ -183,12 +225,30 @@ class ExperimentController extends Controller
             'countries' => 'required|array|min:1',
             'languages' => 'required|array|min:1',
             'user_created_after_date' => 'nullable|date',
-            'overwrite_id' => 'nullable|integer',
+            'flows' => 'required|array|min:2',
+            'flows.*.id' => 'required|exists:' . (config('remote-config.table_prefix', '') . 'flows') . ',id',
+            'flows.*.ratio' => 'required|integer|min:1|max:100',
         ]);
+
+        // Validate that ratios add up to 100%
+        $totalRatio = array_sum(array_column($validated['flows'], 'ratio'));
+        if ($totalRatio !== 100) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['flows' => "The total of all ratios must equal 100%. Current total: {$totalRatio}%"]);
+        }
 
         $validated['is_active'] = $request->has('is_active');
 
         $experiment->update($validated);
+
+        // Update flow ratios in pivot table
+        $flowData = [];
+        foreach ($validated['flows'] as $flowItem) {
+            $flowData[$flowItem['id']] = ['ratio' => $flowItem['ratio']];
+        }
+        $experiment->flows()->sync($flowData);
 
         return redirect()
             ->route('remote-config.experiments.show', $experiment)

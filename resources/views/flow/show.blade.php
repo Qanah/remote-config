@@ -53,7 +53,11 @@
     <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
         <div class="px-4 py-6 sm:p-8">
             <h3 class="text-base font-semibold leading-7 text-gray-900 mb-4">JSON Content</h3>
-            <div id="jsonviewer" style="height: 400px;"></div>
+            @include('remote-config::components.jsonviewer', [
+                'data' => $flow->content,
+                'height' => '400px',
+                'modes' => ['view', 'code', 'tree']
+            ])
         </div>
     </div>
 
@@ -125,23 +129,3 @@
     @endif
 </div>
 @endsection
-
-@push('styles')
-<link href="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
-@endpush
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.js"></script>
-<script>
-    // Initialize JSONEditor in view-only mode
-    const container = document.getElementById('jsonviewer');
-
-    const options = {
-        mode: 'view',
-        modes: ['view', 'code', 'tree'],
-    };
-
-    const editor = new JSONEditor(container, options);
-    editor.set(@json($flow->content));
-</script>
-@endpush

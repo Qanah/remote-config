@@ -26,7 +26,11 @@
                 <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4">
                     <dt class="text-sm font-medium text-gray-900">Content</dt>
                     <dd class="mt-1 text-sm text-gray-700 sm:col-span-2">
-                        <pre class="bg-gray-50 p-4 rounded-lg overflow-x-auto">{{ json_encode($winner->content, JSON_PRETTY_PRINT) }}</pre>
+                        @include('remote-config::components.jsonviewer', [
+                            'data' => $winner->content,
+                            'height' => '400px',
+                            'modes' => ['view', 'code', 'tree']
+                        ])
                     </dd>
                 </div>
             </dl>

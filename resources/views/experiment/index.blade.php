@@ -47,7 +47,7 @@
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
                     <div>
                         <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
-                        <select id="type" name="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                        <select id="type" name="type" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
                             <option value="">All Types</option>
                             @foreach($flowTypes as $key => $label)
                                 <option value="{{ $key }}" {{ request('type') === $key ? 'selected' : '' }}>{{ $label }}</option>
@@ -56,20 +56,54 @@
                     </div>
                     <div>
                         <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select id="status" name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                        <select id="status" name="status" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
                             <option value="">All</option>
                             <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
                     </div>
                     <div>
-                        <label for="search" class="block text-sm font-medium text-gray-700">Search</label>
-                        <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="ID or name..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                        <label for="platform" class="block text-sm font-medium text-gray-700">Platform</label>
+                        <select id="platform" name="platform" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                            <option value="">All Platforms</option>
+                            @foreach($platforms as $key => $label)
+                                <option value="{{ $key }}" {{ request('platform') === $key ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div class="flex items-end">
-                        <button type="submit" class="inline-flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    <div>
+                        <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
+                        <select id="country" name="country" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                            <option value="">All Countries</option>
+                            @foreach($countries as $key => $label)
+                                <option value="{{ $key }}" {{ request('country') === $key ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+                    <div>
+                        <label for="language" class="block text-sm font-medium text-gray-700">Language</label>
+                        <select id="language" name="language" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                            <option value="">All Languages</option>
+                            @foreach($languages as $key => $label)
+                                <option value="{{ $key }}" {{ request('language') === $key ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="search" class="block text-sm font-medium text-gray-700">Search</label>
+                        <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="ID or name..." class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-base px-3 py-2">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="inline-flex flex-1 justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
                             Filter
                         </button>
+                        @if(request()->hasAny(['type', 'status', 'platform', 'country', 'language', 'search']))
+                            <a href="{{ route('remote-config.experiments.index') }}" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                Clear
+                            </a>
+                        @endif
                     </div>
                 </div>
             </form>
@@ -81,12 +115,10 @@
         <table class="min-w-full divide-y divide-gray-300">
             <thead class="bg-gray-50">
                 <tr>
-                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">ID</th>
-                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Name</th>
-                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
-                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Flows</th>
+                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Experiment</th>
+                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Targeting</th>
+                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Variants</th>
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
-                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Updated</th>
                     <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
                         <span class="sr-only">Actions</span>
                     </th>
@@ -95,33 +127,63 @@
             <tbody class="divide-y divide-gray-200 bg-white">
                 @forelse($experiments as $experiment)
                 <tr class="hover:bg-gray-50">
-                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                        #{{ $experiment->id }}
+                    <td class="py-4 pl-4 pr-3 sm:pl-6">
+                        <div class="flex items-center">
+                            <div>
+                                <div class="font-medium text-gray-900">#{{ $experiment->id }} {{ $experiment->name }}</div>
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                        {{ $experiment->type }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </td>
-                    <td class="px-3 py-4 text-sm text-gray-900">
-                        {{ $experiment->name }}
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                            {{ $experiment->type }}
-                        </span>
+                    <td class="px-3 py-4">
+                        <div class="space-y-1">
+                            <div class="flex flex-wrap gap-1">
+                                @foreach($experiment->platforms as $platform)
+                                    <span class="inline-flex items-center rounded bg-purple-50 px-1.5 py-0.5 text-xs font-medium text-purple-700" title="Platform">
+                                        {{ $platform }}
+                                    </span>
+                                @endforeach
+                            </div>
+                            <div class="flex flex-wrap gap-1">
+                                @foreach(array_slice($experiment->countries, 0, 3) as $country)
+                                    <span class="inline-flex items-center rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700" title="Country">
+                                        {{ $country }}
+                                    </span>
+                                @endforeach
+                                @if(count($experiment->countries) > 3)
+                                    <span class="inline-flex items-center rounded bg-gray-50 px-1.5 py-0.5 text-xs font-medium text-gray-600" title="{{ implode(', ', $experiment->countries) }}">
+                                        +{{ count($experiment->countries) - 3 }}
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="flex flex-wrap gap-1">
+                                @foreach($experiment->languages as $language)
+                                    <span class="inline-flex items-center rounded bg-orange-50 px-1.5 py-0.5 text-xs font-medium text-orange-700" title="Language">
+                                        {{ $language }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
                     </td>
                     <td class="px-3 py-4 text-sm text-gray-500">
-                        <span class="text-xs">{{ $experiment->flows->count() }} flows</span>
+                        <div class="text-sm font-medium text-gray-900">{{ $experiment->flows->count() }} variants</div>
+                        <div class="text-xs text-gray-500">{{ $experiment->assignments->count() }} assignments</div>
                     </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <td class="whitespace-nowrap px-3 py-4">
                         <form action="{{ route('remote-config.experiments.toggle', $experiment) }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ $experiment->is_active ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20' : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/10' }}">
                                 {{ $experiment->is_active ? 'Active' : 'Inactive' }}
                             </button>
                         </form>
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {{ $experiment->updated_at->diffForHumans() }}
+                        <div class="text-xs text-gray-500 mt-1">{{ $experiment->updated_at->diffForHumans() }}</div>
                     </td>
                     <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <a href="{{ route('remote-config.experiments.show', $experiment) }}" class="text-primary-600 hover:text-primary-900 mr-4">View</a>
+                        <a href="{{ route('remote-config.experiments.show', $experiment) }}" class="text-primary-600 hover:text-primary-900 mr-3">View</a>
                         <a href="{{ route('remote-config.experiments.edit', $experiment) }}" class="text-primary-600 hover:text-primary-900">Edit</a>
                     </td>
                 </tr>

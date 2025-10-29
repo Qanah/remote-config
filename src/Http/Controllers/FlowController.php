@@ -67,8 +67,13 @@ class FlowController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|max:255',
+            'variant_name' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:' . (config('remote-config.table_prefix', '') . 'flows') . ',variant_name,NULL,id,type,' . $request->input('type')
+            ],
             'content' => 'required|json',
-            'overwrite_id' => 'nullable|integer',
         ]);
 
         $validated['content'] = json_decode($validated['content'], true);
@@ -118,8 +123,13 @@ class FlowController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|max:255',
+            'variant_name' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:' . (config('remote-config.table_prefix', '') . 'flows') . ',variant_name,' . $flow->id . ',id,type,' . $request->input('type')
+            ],
             'content' => 'required|json',
-            'overwrite_id' => 'nullable|integer',
         ]);
 
         $validated['content'] = json_decode($validated['content'], true);

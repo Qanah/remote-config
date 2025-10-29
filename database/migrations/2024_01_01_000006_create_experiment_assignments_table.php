@@ -19,7 +19,11 @@ return new class extends Migration
         if (!Schema::hasTable($tableName)) {
             Schema::create($tableName, function (Blueprint $table) use ($experimentsTable, $flowsTable) {
                 $table->id();
-                $table->morphs('experimentable'); // Polymorphic relation to user
+                // Polymorphic relation to user with custom short index name
+                $table->string('experimentable_type');
+                $table->unsignedBigInteger('experimentable_id');
+                $table->index(['experimentable_type', 'experimentable_id'], 'exp_assign_experimentable_idx');
+
                 $table->foreignId('experiment_id')->constrained($experimentsTable)->onDelete('cascade');
                 $table->foreignId('flow_id')->constrained($flowsTable)->onDelete('cascade');
                 $table->string('cookie_name')->nullable();

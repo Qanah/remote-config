@@ -19,7 +19,11 @@ return new class extends Migration
             Schema::create($tableName, function (Blueprint $table) use ($assignmentsTable) {
                 $table->id();
                 $table->foreignId('experiment_assignment_id')->constrained($assignmentsTable)->onDelete('cascade');
-                $table->morphs('experimentable'); // Polymorphic relation to user
+                // Polymorphic relation to user with custom short index name
+                $table->string('experimentable_type');
+                $table->unsignedBigInteger('experimentable_id');
+                $table->index(['experimentable_type', 'experimentable_id'], 'exp_assign_log_experimentable_idx');
+
                 $table->unsignedBigInteger('experiment_id')->nullable();
                 $table->unsignedBigInteger('flow_id')->nullable();
                 $table->timestamps();
