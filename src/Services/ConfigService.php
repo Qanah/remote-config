@@ -1,0 +1,222 @@
+<?php
+
+namespace Jawabapp\RemoteConfig\Services;
+
+use Jawabapp\RemoteConfig\Models\Flow;
+use Jawabapp\RemoteConfig\Models\Winner;
+use Jawabapp\RemoteConfig\Models\TestOverride;
+use Jawabapp\RemoteConfig\Models\Experiment;
+use Jawabapp\RemoteConfig\Models\ExperimentAssignment;
+
+class ConfigService
+{
+    protected ExperimentService $experimentService;
+
+    public function __construct(ExperimentService $experimentService)
+    {
+        $this->experimentService = $experimentService;
+    }
+
+    /**
+     * Get configuration for a user/entity.
+     *
+     * @param mixed $experimentable The user/entity
+     * @param string $type Flow type
+     * @param array $attributes User attributes (platform, country, language)
+     * @param string|null $testOverrideIp IP for test override
+     * @param int|null $testWinnerId Winner ID for testing
+     * @return array
+     */
+    public function getConfig(
+        $experimentable,
+        string $type,
+        array $attributes = [],
+        ?string $testOverrideIp = null,
+        ?int $testWinnerId = null
+    ): array {
+        // Get base configuration
+        $baseFlow = Flow::getConfig($type);
+        $config = $baseFlow?->content ?? [];
+
+        if (!config('remote-config.enabled', true)) {
+            return $config;
+        }
+
+        // Check for test override first (highest priority)
+        if ($testOverrideIp && config('remote-config.testing_enabled', true)) {
+            $testOverride = new TestOverride($testOverrideIp, $type);
+            $testData = $testOverride->get();
+
+            if ($testData && isset($testData['content'])) {
+                return array_replace_recursive($config, $testData['content']);
+            }
+        }
+
+        // Check for winner configuration (second priority)
+        $platform = $attributes['platform'] ?? $experimentable->getAttribute('platform') ?? $experimentable->getAttribute('os');
+        $country = $attributes['country'] ?? $experimentable->getAttribute('country_code') ?? $experimentable->getAttribute('geo_country_code');
+        $language = $attributes['language'] ?? $experimentable->getAttribute('language') ?? $experimentable->getAttribute('lang');
+
+        if ($platform && $country && $language) {
+            $winner = null;
+
+            if ($testWinnerId) {
+                $winner = Winner::find($testWinnerId);
+            } else {
+                $winner = Winner::getWinner($type, $platform, $country, $language);
+            }
+
+            if ($winner) {
+                return array_replace_recursive($config, $winner->content);
+            }
+        }
+
+        // Check for active experiment (third priority)
+        $assignment = $this->getOrCreateAssignment(
+            $experimentable,
+            $type,
+            $attributes
+        );
+
+        if ($assignment && $assignment->flow) {
+            return array_replace_recursive($config, $assignment->flow->content);
+        }
+
+        // Return base configuration
+        return $config;
+    }
+
+    /**
+     * Get or create experiment assignment for a user.
+     *
+     * @param mixed $experimentable
+     * @param string $type
+     * @param array $attributes
+     * @param int|null $overwriteId
+     * @return ExperimentAssignment|null
+     */
+    public function getOrCreateAssignment(
+        $experimentable,
+        string $type,
+        array $attributes = [],
+        ?int $overwriteId = null
+    ): ?ExperimentAssignment {
+        // Check for existing assignment
+        $existing = ExperimentAssignment::where('experimentable_type', get_class($experimentable))
+            ->where('experimentable_id', $experimentable->id)
+            ->whereHas('experiment', function ($query) use ($type) {
+                $query->where('type', $type)->where('is_active', true);
+            })
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // Get user attributes
+        $platform = $attributes['platform'] ?? $experimentable->getAttribute('platform') ?? $experimentable->getAttribute('os');
+        $country = $attributes['country'] ?? $experimentable->getAttribute('country_code') ?? $experimentable->getAttribute('geo_country_code');
+        $language = $attributes['language'] ?? $experimentable->getAttribute('language') ?? $experimentable->getAttribute('lang');
+
+        if (!$platform || !$country || !$language) {
+            return null;
+        }
+
+        // Check if user created after experiment start date
+        $userCreatedAfter = config('remote-config.user_created_after_date');
+        if ($userCreatedAfter && $experimentable->created_at && $experimentable->created_at->isBefore($userCreatedAfter)) {
+            return null;
+        }
+
+        // Find matching active experiment
+        $experiment = Experiment::getActiveExperiment(
+            $type,
+            $overwriteId,
+            $platform,
+            $country,
+            $language
+        );
+
+        if (!$experiment || $experiment->flows->isEmpty()) {
+            return null;
+        }
+
+        // Select a flow variant
+        $selectedFlow = $this->experimentService->selectFlow($experiment);
+
+        if (!$selectedFlow) {
+            return null;
+        }
+
+        // Create assignment
+        return ExperimentAssignment::create([
+            'experimentable_type' => get_class($experimentable),
+            'experimentable_id' => $experimentable->id,
+            'experiment_id' => $experiment->id,
+            'flow_id' => $selectedFlow->id,
+            'cookie_name' => 'exp_' . $experiment->id . '_' . $experimentable->id,
+        ]);
+    }
+
+    /**
+     * Get assignment stats for an experiment.
+     *
+     * @param Experiment $experiment
+     * @return array
+     */
+    public function getAssignmentStats(Experiment $experiment): array
+    {
+        $assignments = ExperimentAssignment::where('experiment_id', $experiment->id)->get();
+
+        $stats = [];
+        $total = $assignments->count();
+
+        foreach ($experiment->flows as $flow) {
+            $count = $assignments->where('flow_id', $flow->id)->count();
+            $percentage = $total > 0 ? ($count / $total) * 100 : 0;
+
+            $stats[] = [
+                'flow_id' => $flow->id,
+                'flow_type' => $flow->type,
+                'assigned_count' => $count,
+                'percentage' => round($percentage, 2),
+            ];
+        }
+
+        return [
+            'total_assignments' => $total,
+            'flows' => $stats,
+        ];
+    }
+
+    /**
+     * Remove assignment for a user.
+     *
+     * @param mixed $experimentable
+     * @param int $experimentId
+     * @return bool
+     */
+    public function removeAssignment($experimentable, int $experimentId): bool
+    {
+        $assignment = ExperimentAssignment::getAssignment($experimentable, $experimentId);
+
+        if ($assignment) {
+            $assignment->logAndDelete();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Merge configurations recursively.
+     *
+     * @param array $base
+     * @param array $override
+     * @return array
+     */
+    public function mergeConfigs(array $base, array $override): array
+    {
+        return array_replace_recursive($base, $override);
+    }
+}
