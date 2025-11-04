@@ -20,7 +20,7 @@ class TestingController extends Controller
         }
 
         $flowTypes = config('remote-config.flow_types', []);
-        $flows = Flow::where('is_active', true)->get();
+        $flows = Flow::where('is_default', true)->get();
 
         // Get all test overrides grouped by type
         $overridesByType = [];

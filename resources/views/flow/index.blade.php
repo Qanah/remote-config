@@ -104,7 +104,7 @@
                         </span>
                     </td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
-                        {{ $flow->variant_name }}
+                        {{ $flow->name }}
                     </td>
                     <td class="px-3 py-4 text-sm text-gray-500 max-w-md truncate">
                         <code class="text-xs bg-gray-100 px-2 py-1 rounded">

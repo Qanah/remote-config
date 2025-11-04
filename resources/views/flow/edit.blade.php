@@ -46,12 +46,12 @@
                         @enderror
                     </div>
 
-                    <!-- Variant Name -->
+                    <!-- Name -->
                     <div class="sm:col-span-3">
-                        <label for="variant_name" class="block text-sm font-medium text-gray-700">Variant Name *</label>
-                        <input type="text" name="variant_name" id="variant_name" value="{{ old('variant_name', $flow->variant_name) }}" required class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2" placeholder="e.g., control, variant-a">
-                        <p class="mt-2 text-sm text-gray-500">Unique name for this variant within the same type (e.g., control, variant-a, variant-b).</p>
-                        @error('variant_name')
+                        <label for="name" class="block text-sm font-medium text-gray-700">Name *</label>
+                        <input type="text" name="name" id="name" value="{{ old('name', $flow->name) }}" required class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2" placeholder="e.g., control, variant-a">
+                        <p class="mt-2 text-sm text-gray-500">Unique name for this flow within the same type (e.g., control, variant-a, variant-b).</p>
+                        @error('name')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -65,6 +65,19 @@
                             </label>
                         </div>
                         <p class="mt-2 text-sm text-gray-500">Inactive flows cannot be used in experiments.</p>
+                    </div>
+
+                    <div class="sm:col-span-6">
+                        <div class="flex items-center">
+                            <input id="is_default" name="is_default" type="checkbox" {{ old('is_default', $flow->is_default) ? 'checked' : '' }} class="h-4 w-4 rounded border-2 border-gray-400 text-primary-600 focus:ring-primary-600">
+                            <label for="is_default" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Set as Default
+                            </label>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">Mark this flow as the default configuration for this type. Only one default per type is allowed.</p>
+                        @error('is_default')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- JSON Content -->

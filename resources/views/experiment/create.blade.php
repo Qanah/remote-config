@@ -143,7 +143,7 @@
                                     <select :name="'flows[' + index + '][id]'" x-model="flowItem.id" required class="block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2" :disabled="!selectedType">
                                         <option value="">Select Flow</option>
                                         <template x-for="availFlow in getFilteredFlows()" :key="availFlow.id">
-                                            <option :value="availFlow.id" x-text="'FLOW ' + availFlow.type + ' #' + availFlow.id + ' ' + availFlow.variant_name"></option>
+                                            <option :value="availFlow.id" x-text="availFlow.display_label"></option>
                                         </template>
                                     </select>
                                 </div>

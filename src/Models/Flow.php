@@ -2,26 +2,29 @@
 
 namespace Jawabapp\RemoteConfig\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Flow extends Model
 {
-    public const DEFAULT_TYPE = 'default';
-    public const TESTING_TYPE = 'testing';
-    public const BACKEND_TYPE = 'backend-config';
-
     protected $fillable = [
         'type',
-        'variant_name',
+        'name',
         'content',
+        'is_default',
         'is_active',
     ];
 
     protected $casts = [
         'content' => 'array',
+        'is_default' => 'boolean',
         'is_active' => 'boolean',
+    ];
+
+    protected $appends = [
+        'display_label',
     ];
 
     public function __construct(array $attributes = [])
@@ -69,15 +72,26 @@ class Flow extends Model
     }
 
     /**
+     * Get the display label for the flow.
+     * Format: "FLOW {type} #{id} {name}"
+     */
+    protected function displayLabel(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => "FLOW {$this->type} #{$this->id} {$this->name}"
+        );
+    }
+
+    /**
      * Get a flow configuration by type.
      */
-    public static function getConfig(string $type = self::DEFAULT_TYPE): ?self
+    public static function getConfig(string $type): ?self
     {
         static $configs;
 
         if (empty($configs[$type])) {
             $configs[$type] = self::where('type', $type)
-                ->where('is_active', true)
+                ->where('is_default', true)
                 ->first();
         }
 

@@ -140,7 +140,7 @@
                                 <div class="flex items-center gap-4 bg-gray-50 rounded-lg p-4">
                                     <div class="flex-1">
                                         <div class="text-sm font-medium text-gray-900">
-                                            FLOW {{ $flow->type }} #{{ $flow->id }} {{ $flow->variant_name }}
+                                            {{ $flow->display_label }}
                                         </div>
                                         <input type="hidden" name="flows[{{ $index }}][id]" value="{{ $flow->id }}">
                                     </div>

@@ -21,6 +21,11 @@
                         {{ $flow->is_active ? 'Active' : 'Inactive' }}
                     </span>
                 </div>
+                <div class="mt-2 flex items-center text-sm text-gray-500">
+                    <span class="{{ $flow->is_default ? 'text-green-600' : 'text-gray-400' }}">
+                        {{ $flow->is_default ? 'Default' : 'Non-Default' }}
+                    </span>
+                </div>
             </div>
         </div>
         <div class="mt-4 flex md:ml-4 md:mt-0 gap-x-3">

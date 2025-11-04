@@ -27,6 +27,11 @@ class FlowController extends Controller
             $query->where('is_active', $isActive);
         }
 
+        if ($request->filled('default')) {
+            $isDefault = $request->input('default') === 'default';
+            $query->where('is_default', $isDefault);
+        }
+
         // Search by ID or content
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -67,17 +72,40 @@ class FlowController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|max:255',
-            'variant_name' => [
+            'name' => [
                 'required',
                 'string',
                 'max:255',
-                'unique:' . (config('remote-config.table_prefix', '') . 'flows') . ',variant_name,NULL,id,type,' . $request->input('type')
+                'unique:' . (config('remote-config.table_prefix', '') . 'flows') . ',name,NULL,id,type,' . $request->input('type')
             ],
             'content' => 'required|json',
         ]);
 
         $validated['content'] = json_decode($validated['content'], true);
         $validated['is_active'] = $request->has('is_active');
+        $validated['is_default'] = $request->has('is_default');
+
+        // Check if trying to set as default while inactive
+        if ($validated['is_default'] && !$validated['is_active']) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['is_default' => 'A flow cannot be set as default if it is inactive. Please activate the flow first.']);
+        }
+
+        // Check if trying to set as default when another default already exists
+        if ($validated['is_default']) {
+            $existingDefault = Flow::where('type', $validated['type'])
+                ->where('is_default', true)
+                ->first();
+
+            if ($existingDefault) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->withErrors(['is_default' => "A default flow already exists for type '{$validated['type']}' (Flow #{$existingDefault->id}: {$existingDefault->name}). Please unset it first or don't mark this as default."]);
+            }
+        }
 
         $flow = Flow::create($validated);
 
@@ -123,17 +151,41 @@ class FlowController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|max:255',
-            'variant_name' => [
+            'name' => [
                 'required',
                 'string',
                 'max:255',
-                'unique:' . (config('remote-config.table_prefix', '') . 'flows') . ',variant_name,' . $flow->id . ',id,type,' . $request->input('type')
+                'unique:' . (config('remote-config.table_prefix', '') . 'flows') . ',name,' . $flow->id . ',id,type,' . $request->input('type')
             ],
             'content' => 'required|json',
         ]);
 
         $validated['content'] = json_decode($validated['content'], true);
         $validated['is_active'] = $request->has('is_active');
+        $validated['is_default'] = $request->has('is_default');
+
+        // Check if trying to set as default while inactive
+        if ($validated['is_default'] && !$validated['is_active']) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['is_default' => 'A flow cannot be set as default if it is inactive. Please activate the flow first.']);
+        }
+
+        // Check if trying to set as default when another default already exists
+        if ($validated['is_default'] && !$flow->is_default) {
+            $existingDefault = Flow::where('type', $validated['type'])
+                ->where('is_default', true)
+                ->where('id', '!=', $flow->id)
+                ->first();
+
+            if ($existingDefault) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->withErrors(['is_default' => "A default flow already exists for type '{$validated['type']}' (Flow #{$existingDefault->id}: {$existingDefault->name}). Please unset it first or don't mark this as default."]);
+            }
+        }
 
         $flow->update($validated);
 
@@ -169,6 +221,13 @@ class FlowController extends Controller
      */
     public function toggle(Flow $flow): RedirectResponse
     {
+        // Check if trying to deactivate a default flow
+        if ($flow->is_active && $flow->is_default) {
+            return redirect()
+                ->back()
+                ->with('error', 'Cannot deactivate a default flow. Please unset it as default first.');
+        }
+
         $flow->update([
             'is_active' => !$flow->is_active,
         ]);
