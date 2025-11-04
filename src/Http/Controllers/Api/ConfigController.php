@@ -35,8 +35,16 @@ class ConfigController extends Controller
             ], 401);
         }
 
+        // Validate required fields
+        $validated = $request->validate([
+            'type' => 'required|string|max:255',
+            'platform' => 'nullable|string',
+            'country' => 'nullable|string',
+            'language' => 'nullable|string',
+        ]);
+
         // Get configuration type from request
-        $type = $request->input('type', 'default');
+        $type = $validated['type'];
 
         // Get user attributes
         $attributes = [
@@ -187,7 +195,15 @@ class ConfigController extends Controller
             ], 401);
         }
 
-        $type = $request->input('type', 'default');
+        // Validate required fields
+        $validated = $request->validate([
+            'type' => 'required|string|max:255',
+            'platform' => 'nullable|string',
+            'country' => 'nullable|string',
+            'language' => 'nullable|string',
+        ]);
+
+        $type = $validated['type'];
         $ip = $request->ip();
 
         // Use same logic as index but force test override
