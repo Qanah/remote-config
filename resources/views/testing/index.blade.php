@@ -9,6 +9,15 @@
             <h2 class="text-2xl font-bold text-gray-900">Testing Overrides</h2>
             <p class="mt-1 text-sm text-gray-500">Override config for specific IP addresses</p>
         </div>
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+            <form action="{{ route('remote-config.testing.clear') }}" method="POST" onsubmit="return confirm('Are you sure you want to clear all test overrides?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                    Clear All
+                </button>
+            </form>
+        </div>
     </div>
 
     <form method="POST" action="{{ route('remote-config.testing.store') }}"

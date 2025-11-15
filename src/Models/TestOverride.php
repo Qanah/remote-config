@@ -2,20 +2,23 @@
 
 namespace Jawabapp\RemoteConfig\Models;
 
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Cache;
 
 /**
- * Test Override Model - Redis-based storage for IP-based test flows.
- * Stores testing overrides as Redis hashes for better performance and simpler structure.
+ * Test Override Model - Laravel Cache-based storage for IP-based test flows.
+ * Uses Laravel's Cache facade with Redis driver and cache tags for efficient management.
  */
 class TestOverride
 {
-    private string $pattern = 'remote_config_testing:*';
-    private string $connection;
+    private const CACHE_TAG = 'remote_config_testing';
+    private const CACHE_PREFIX = 'test_override:';
+    private const INDEX_KEY = 'index';
+
+    private string $store;
 
     public function __construct()
     {
-        $this->connection = config('remote-config.redis.connection', 'default');
+        $this->store = config('remote-config.testing.cache_store', 'redis');
     }
 
     /**
@@ -24,14 +27,17 @@ class TestOverride
     public static function all()
     {
         $model = new self();
-        $keys = Redis::connection($model->connection)->keys($model->pattern);
+        $index = $model->cache()->get(self::INDEX_KEY, []);
 
-        return collect($keys)->map(function ($key) use ($model) {
-            $data = Redis::connection($model->connection)->hgetall($key);
-            return array_merge([
-                'key' => str_replace($model->getPatternPrefix(), '', $key)
-            ], $data);
-        });
+        return collect($index)->map(function ($key) use ($model) {
+            $data = $model->cache()->get(self::CACHE_PREFIX . $key);
+
+            if (!$data) {
+                return null;
+            }
+
+            return array_merge(['key' => $key], $data);
+        })->filter()->values();
     }
 
     /**
@@ -59,9 +65,14 @@ class TestOverride
      */
     public static function find(string $key): ?array
     {
-        $all = self::all();
-        $found = $all->firstWhere('key', $key);
-        return $found ? $found : null;
+        $model = new self();
+        $data = $model->cache()->get(self::CACHE_PREFIX . $key);
+
+        if (!$data) {
+            return null;
+        }
+
+        return array_merge(['key' => $key], $data);
     }
 
     /**
@@ -88,9 +99,12 @@ class TestOverride
     {
         $model = new self();
         $key = uniqid('test_');
-        $fullKey = $model->getPatternPrefix() . $key;
 
-        Redis::connection($model->connection)->hmset($fullKey, $data);
+        // Store the data in cache
+        $model->cache()->forever(self::CACHE_PREFIX . $key, $data);
+
+        // Add to index
+        $model->addToIndex($key);
 
         return $key;
     }
@@ -101,9 +115,13 @@ class TestOverride
     public static function update(string $key, array $data): void
     {
         $model = new self();
-        $fullKey = $model->getPatternPrefix() . $key;
 
-        Redis::connection($model->connection)->hmset($fullKey, $data);
+        // Get existing data to merge
+        $existing = $model->cache()->get(self::CACHE_PREFIX . $key, []);
+        $updated = array_merge($existing, $data);
+
+        // Update in cache
+        $model->cache()->forever(self::CACHE_PREFIX . $key, $updated);
     }
 
     /**
@@ -112,9 +130,12 @@ class TestOverride
     public static function delete(string $key): void
     {
         $model = new self();
-        $fullKey = $model->getPatternPrefix() . $key;
 
-        Redis::connection($model->connection)->del($fullKey);
+        // Remove from cache
+        $model->cache()->forget(self::CACHE_PREFIX . $key);
+
+        // Remove from index
+        $model->removeFromIndex($key);
     }
 
     /**
@@ -138,19 +159,17 @@ class TestOverride
     public static function clear(): void
     {
         $model = new self();
-        $keys = Redis::connection($model->connection)->keys($model->pattern);
 
-        if (!empty($keys)) {
-            Redis::connection($model->connection)->del($keys);
+        // Get all keys from index
+        $index = $model->cache()->get(self::INDEX_KEY, []);
+
+        // Delete each cached item
+        foreach ($index as $key) {
+            $model->cache()->forget(self::CACHE_PREFIX . $key);
         }
-    }
 
-    /**
-     * Get the pattern prefix (without wildcard).
-     */
-    private function getPatternPrefix(): string
-    {
-        return rtrim($this->pattern, '*');
+        // Clear the index
+        $model->cache()->forget(self::INDEX_KEY);
     }
 
     /**
@@ -159,5 +178,36 @@ class TestOverride
     public static function exists(string $ip, string $type): bool
     {
         return self::findByIpAndType($ip, $type) !== null;
+    }
+
+    /**
+     * Get the cache instance with tags.
+     */
+    private function cache()
+    {
+        return Cache::store($this->store)->tags([self::CACHE_TAG]);
+    }
+
+    /**
+     * Add a key to the index.
+     */
+    private function addToIndex(string $key): void
+    {
+        $index = $this->cache()->get(self::INDEX_KEY, []);
+
+        if (!in_array($key, $index)) {
+            $index[] = $key;
+            $this->cache()->forever(self::INDEX_KEY, $index);
+        }
+    }
+
+    /**
+     * Remove a key from the index.
+     */
+    private function removeFromIndex(string $key): void
+    {
+        $index = $this->cache()->get(self::INDEX_KEY, []);
+        $index = array_filter($index, fn($k) => $k !== $key);
+        $this->cache()->forever(self::INDEX_KEY, array_values($index));
     }
 }

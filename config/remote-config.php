@@ -205,13 +205,13 @@ return [
     | Testing Override Configuration
     |--------------------------------------------------------------------------
     |
-    | Redis cache key prefix for storing test overrides
+    | Configuration for test overrides using Laravel Cache
+    | - cache_store: The cache store to use (redis, memcached, etc.)
     |
     */
 
     'testing' => [
-        'cache_key_prefix' => 'remote_config_test_',
-        'redis_connection' => env('REMOTE_CONFIG_REDIS_CONNECTION', 'default'),
+        'cache_store' => env('REMOTE_CONFIG_TESTING_CACHE_STORE', 'redis'),
     ],
 
     /*

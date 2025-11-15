@@ -47,5 +47,6 @@ if ($webConfig['enabled'] ?? true) {
             Route::get('testing', [TestingController::class, 'index'])->name('testing.index');
             Route::post('testing', [TestingController::class, 'store'])->name('testing.store');
             Route::delete('testing/{ip}/{type}', [TestingController::class, 'destroy'])->name('testing.destroy');
+            Route::delete('testing', [TestingController::class, 'clear'])->name('testing.clear');
         });
 }
