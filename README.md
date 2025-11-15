@@ -649,7 +649,92 @@ $user->confirmExperiment('Quick Onboarding Test', [
 ]);
 ```
 
-### Example 3: Deploying Winners
+### Example 3: Fetching Multiple Configuration Types
+
+```php
+// Fetch multiple types in a single API request
+// GET /api/config?type[]=onboarding&type[]=feature&type[]=pricing
+
+$response = Http::withToken($token)->get('https://api.example.com/api/config', [
+    'type' => ['onboarding', 'feature', 'pricing'],
+    'platform' => 'ios',
+    'country' => 'US',
+    'language' => 'en',
+]);
+
+// Response format for multiple types:
+{
+    "success": true,
+    "data": {
+        "onboarding": {
+            "steps": ["welcome", "profile", "preferences"],
+            "theme": "light"
+        },
+        "feature": {
+            "new_checkout": true,
+            "dark_mode": false
+        },
+        "pricing": {
+            "monthly_price": 9.99,
+            "trial_days": 14
+        }
+    },
+    "meta": {
+        "onboarding": {
+            "has_experiment": true,
+            "experiment_id": 5,
+            "flow_id": 12
+        },
+        "feature": {
+            "has_experiment": false,
+            "experiment_id": null,
+            "flow_id": 8
+        },
+        "pricing": {
+            "has_experiment": true,
+            "experiment_id": 3,
+            "flow_id": 15
+        }
+    }
+}
+
+// Single type request
+// GET /api/config?type=onboarding
+{
+    "success": true,
+    "data": {
+        "onboarding": {
+            "steps": ["welcome", "profile", "preferences"],
+            "theme": "light"
+        }
+    },
+    "meta": {
+        "onboarding": {
+            "has_experiment": true,
+            "experiment_id": 5,
+            "flow_id": 12
+        }
+    }
+}
+
+// No type parameter - returns ALL active types
+// GET /api/config
+{
+    "success": true,
+    "data": {
+        "onboarding": {...},
+        "feature": {...},
+        "pricing": {...}
+    },
+    "meta": {
+        "onboarding": {...},
+        "feature": {...},
+        "pricing": {...}
+    }
+}
+```
+
+### Example 4: Deploying Winners
 
 ```php
 use Jawabapp\RemoteConfig\Models\Winner;

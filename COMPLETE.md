@@ -17,7 +17,7 @@
 - ✅ Service Provider with auto-discovery
 
 ### **2. API Layer** ✅
-- ✅ GET /api/config - Get configuration (with automatic test override support)
+- ✅ GET /api/config - Get configuration (supports single/multiple types, automatic test override support)
 - ✅ POST /api/config/confirm - Confirm experiment
 - ✅ POST /api/config/issue - Report issues
 
@@ -118,24 +118,56 @@ http://your-app.test/remote-config/flows
 ### **4. Use the API**
 
 ```bash
-# Get configuration for a user
+# Get single configuration type
 curl -H "Authorization: Bearer token" \
-  "http://your-app.test/api/config?type=default&platform=ios&country=SA&language=ar"
+  "http://your-app.test/api/config?type=onboarding&platform=ios&country=SA&language=ar"
 
 # Response:
 {
     "success": true,
     "data": {
-        "feature_flags": {...},
-        "ui_config": {...}
+        "onboarding": {
+            "steps": ["welcome", "profile"],
+            "theme": "light"
+        }
     },
     "meta": {
-        "type": "default",
-        "has_experiment": true,
-        "experiment_id": 5,
-        "flow_id": 12
+        "onboarding": {
+            "has_experiment": true,
+            "experiment_id": 5,
+            "flow_id": 12
+        }
     }
 }
+
+# Get multiple configuration types in one request
+curl -H "Authorization: Bearer token" \
+  "http://your-app.test/api/config?type[]=onboarding&type[]=feature&platform=ios"
+
+# Response:
+{
+    "success": true,
+    "data": {
+        "onboarding": {...},
+        "feature": {...}
+    },
+    "meta": {
+        "onboarding": {
+            "has_experiment": true,
+            "experiment_id": 5,
+            "flow_id": 12
+        },
+        "feature": {
+            "has_experiment": false,
+            "experiment_id": null,
+            "flow_id": 8
+        }
+    }
+}
+
+# Get all active types (omit type parameter)
+curl -H "Authorization: Bearer token" \
+  "http://your-app.test/api/config?platform=ios"
 ```
 
 ---

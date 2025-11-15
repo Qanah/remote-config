@@ -21,6 +21,7 @@ class ConfigController extends Controller
 
     /**
      * Get remote configuration with experiments applied.
+     * Supports single type or multiple types in one request.
      *
      * @param Request $request
      * @return JsonResponse
@@ -36,16 +37,38 @@ class ConfigController extends Controller
             ], 401);
         }
 
-        // Validate required fields
+        // Validate fields - type can be string, array, or null
         $validated = $request->validate([
-            'type' => 'required|string|max:255',
+            'type' => 'nullable',
+            'type.*' => 'string|max:255',
             'platform' => 'nullable|string',
             'country' => 'nullable|string',
             'language' => 'nullable|string',
         ]);
 
-        // Get configuration type from request
-        $type = $validated['type'];
+        // Normalize type parameter
+        $typeInput = $request->input('type');
+        $types = [];
+
+        if ($typeInput === null || $typeInput === '') {
+            // No type specified - get all active types
+            $types = $this->configService->getActiveTypes();
+        } elseif (is_array($typeInput)) {
+            // Array of types provided
+            $types = $typeInput;
+        } elseif (is_string($typeInput)) {
+            // Single type as string - convert to array for consistent processing
+            $types = [$typeInput];
+        }
+
+        // Limit number of types per request (prevent abuse)
+        $maxTypes = config('remote-config.api.max_types_per_request', 10);
+        if (count($types) > $maxTypes) {
+            return response()->json([
+                'success' => false,
+                'message' => "Maximum {$maxTypes} types allowed per request",
+            ], 400);
+        }
 
         // Get user attributes
         $attributes = [
@@ -60,26 +83,19 @@ class ConfigController extends Controller
             $testOverrideIp = $request->ip();
         }
 
-        // Get configuration
-        $config = $this->configService->getConfig(
+        // Get configurations using the batch method (handles both single and multiple)
+        $result = $this->configService->getMultipleConfigs(
             $user,
-            $type,
+            $types,
             $attributes,
             $testOverrideIp
         );
 
-        // Get active assignment info (optional)
-        $assignment = $this->configService->getOrCreateAssignment($user, $type, $attributes);
-
+        // Return grouped format for both single and multiple types
         return response()->json([
             'success' => true,
-            'data' => $config,
-            'meta' => [
-                'type' => $type,
-                'has_experiment' => $assignment !== null,
-                'experiment_id' => $assignment?->experiment_id,
-                'flow_id' => $assignment?->flow_id,
-            ],
+            'data' => $result['data'],
+            'meta' => $result['meta'],
         ]);
     }
 

@@ -215,4 +215,66 @@ class ConfigService
         ];
     }
 
+    /**
+     * Get all active types (types that have active default flows).
+     *
+     * @return array
+     */
+    public function getActiveTypes(): array
+    {
+        // Get types from active and default flows only
+        $types = Flow::where('is_active', true)
+            ->where('is_default', true)
+            ->distinct()
+            ->pluck('type')
+            ->values()
+            ->toArray();
+
+        return $types;
+    }
+
+    /**
+     * Get configurations for multiple types.
+     *
+     * @param mixed $experimentable The user/entity
+     * @param array $types Array of flow types
+     * @param array $attributes User attributes (platform, country, language)
+     * @param string|null $testOverrideIp IP for test override
+     * @return array Associative array keyed by type
+     */
+    public function getMultipleConfigs(
+        $experimentable,
+        array $types,
+        array $attributes = [],
+        ?string $testOverrideIp = null
+    ): array {
+        $configs = [];
+        $metadata = [];
+
+        // Process each type using the existing getConfig method
+        foreach ($types as $type) {
+            // Get configuration using the single getConfig method
+            $config = $this->getConfig(
+                $experimentable,
+                $type,
+                $attributes,
+                $testOverrideIp
+            );
+
+            $assignment = $this->getOrCreateAssignment($experimentable, $type, $attributes);
+
+            $configs[$type] = $config;
+            $metadata[$type] = [
+                'has_experiment' => $assignment !== null,
+                'experiment_id' => $assignment?->experiment_id,
+                'flow_id' => $assignment?->flow_id,
+            ];
+        }
+
+        return [
+            'data' => $configs,
+            'meta' => $metadata,
+        ];
+    }
+
 }
