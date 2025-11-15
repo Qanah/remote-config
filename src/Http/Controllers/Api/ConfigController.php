@@ -59,16 +59,12 @@ class ConfigController extends Controller
             $testOverrideIp = $request->ip();
         }
 
-        // Check for test winner ID
-        $testWinnerId = $request->input('test_winner_id');
-
         // Get configuration
         $config = $this->configService->getConfig(
             $user,
             $type,
             $attributes,
-            $testOverrideIp,
-            $testWinnerId
+            $testOverrideIp
         );
 
         // Get active assignment info (optional)
@@ -217,8 +213,7 @@ class ConfigController extends Controller
             $user,
             $type,
             $attributes,
-            $ip,
-            null
+            $ip
         );
 
         return response()->json([

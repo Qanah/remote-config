@@ -13,7 +13,6 @@ class ExperimentAssignment extends Model
         'experimentable_id',
         'experiment_id',
         'flow_id',
-        'cookie_name',
     ];
 
     public function __construct(array $attributes = [])

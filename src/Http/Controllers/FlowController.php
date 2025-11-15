@@ -27,9 +27,12 @@ class FlowController extends Controller
             $query->where('is_active', $isActive);
         }
 
-        if ($request->filled('default')) {
-            $isDefault = $request->input('default') === 'default';
-            $query->where('is_default', $isDefault);
+        // Filter by default/variants tab - defaults to 'default' tab
+        $defaultFilter = $request->input('default', 'default');
+        if ($defaultFilter === 'default') {
+            $query->where('is_default', true);
+        } elseif ($defaultFilter === 'variants') {
+            $query->where('is_default', false);
         }
 
         // Search by ID or content
@@ -50,6 +53,8 @@ class FlowController extends Controller
             'total' => Flow::count(),
             'active' => Flow::where('is_active', true)->count(),
             'inactive' => Flow::where('is_active', false)->count(),
+            'default' => Flow::where('is_default', true)->count(),
+            'variants' => Flow::where('is_default', false)->count(),
         ];
 
         return view('remote-config::flow.index', compact('flows', 'flowTypes', 'stats'));

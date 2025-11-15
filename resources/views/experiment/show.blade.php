@@ -79,7 +79,7 @@
                             @foreach($experiment->flows as $flow)
                                 <li class="flex items-center justify-between py-3 pl-3 pr-4 text-sm">
                                     <div class="flex w-0 flex-1 items-center">
-                                        <span class="ml-2 w-0 flex-1 truncate">Flow #{{ $flow->id }} - {{ $flow->type }}</span>
+                                        <span class="ml-2 w-0 flex-1 truncate">{{ $flow->display_label }}</span>
                                     </div>
                                     <div class="ml-4 flex-shrink-0">
                                         <span class="font-medium text-primary-600">Ratio: {{ $flow->pivot->ratio }}%</span>
@@ -106,7 +106,7 @@
                     @endphp
                     <div>
                         <div class="flex items-center justify-between mb-1">
-                            <span class="text-sm font-medium text-gray-700">Flow #{{ $flow->id }}</span>
+                            <span class="text-sm font-medium text-gray-700">{{ $flow->display_label }}</span>
                             <span class="text-sm text-gray-500">{{ number_format($flowAssignments) }} ({{ $percentage }}%)</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2">

@@ -94,7 +94,6 @@ trait Experimentable
             'experimentable_id' => $this->id,
             'experiment_id' => $experiment->id,
             'flow_id' => $selectedFlow->id,
-            'cookie_name' => 'exp_' . $experiment->id . '_' . $this->id,
         ]);
     }
 

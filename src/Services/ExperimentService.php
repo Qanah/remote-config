@@ -4,50 +4,21 @@ declare(strict_types=1);
 
 namespace Jawabapp\RemoteConfig\Services;
 
-use Illuminate\Contracts\Cache\Repository;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Cookie;
 use Jawabapp\RemoteConfig\Models\Experiment;
 use Jawabapp\RemoteConfig\Models\Flow;
 
 class ExperimentService
 {
-    /**
-     * Cache store for experiment counters.
-     *
-     * @var Repository
-     */
-    private Repository $store;
-
-    /**
-     * The key of the experiment for cookie.
-     *
-     * @var string
-     */
-    private string $key;
+    protected RedisCounterService $redisCounter;
 
     /**
      * ExperimentService constructor.
      *
-     * @param string $key
-     * @param Repository|null $store
+     * @param RedisCounterService|null $redisCounter
      */
-    public function __construct(string $key = 'experiment', ?Repository $store = null)
+    public function __construct(?RedisCounterService $redisCounter = null)
     {
-        $this->store = $store ?? Cache::store();
-        $this->key = $key;
-    }
-
-    /**
-     * Static factory method.
-     *
-     * @param string $key
-     * @param Repository|null $store
-     * @return self
-     */
-    public static function make(string $key = 'experiment', ?Repository $store = null): self
-    {
-        return new static($key, $store);
+        $this->redisCounter = $redisCounter ?? app(RedisCounterService::class);
     }
 
     /**
@@ -64,148 +35,77 @@ class ExperimentService
             return null;
         }
 
-        // Build array of flow IDs with their ratios
-        $variants = [];
+        // Get current counters for all flows
+        $flowCounters = [];
+        $totalAssigned = 0;
+
         foreach ($flows as $flow) {
-            $key = "exp_{$experiment->id}_flow_{$flow->id}";
-            $variants[$key] = $flow->pivot->ratio;
+            $key = "experiment:{$experiment->id}:flow:{$flow->id}";
+            $count = $this->redisCounter->getCounter($key);
+            $flowCounters[$flow->id] = $count;
+            $totalAssigned += $count;
         }
 
-        // Select a variant based on ratios
-        $selectedKey = $this->start($variants);
-
-        if (!$selectedKey) {
-            return null;
+        // If no assignments yet, return first flow
+        if ($totalAssigned === 0) {
+            $firstFlow = $flows->first();
+            $key = "experiment:{$experiment->id}:flow:{$firstFlow->id}";
+            $this->redisCounter->incrementAndGet($key);
+            return $firstFlow;
         }
 
-        // Extract flow ID from key
-        preg_match('/flow_(\d+)$/', $selectedKey, $matches);
-        $flowId = $matches[1] ?? null;
+        // Find the flow that needs more assignments to reach its ratio
+        foreach ($flows as $flow) {
+            $targetRatio = $flow->pivot->ratio / 100;
+            $currentRatio = $flowCounters[$flow->id] / $totalAssigned;
 
-        return $flows->firstWhere('id', $flowId);
-    }
-
-    /**
-     * Start variant selection and save to cookie.
-     *
-     * @param array $variants
-     * @return string|null
-     */
-    public function startAndSaveCookie(array $variants): ?string
-    {
-        $selected = $this->start($variants);
-
-        if ($selected) {
-            $cookieConfig = config('remote-config.cookie', []);
-            Cookie::queue(cookie(
-                $this->key,
-                $selected,
-                $cookieConfig['ttl'] ?? 525600, // 1 year
-                $cookieConfig['path'] ?? '/',
-                $cookieConfig['domain'] ?? null,
-                $cookieConfig['secure'] ?? false,
-                $cookieConfig['http_only'] ?? true,
-                false,
-                $cookieConfig['same_site'] ?? 'lax'
-            ));
-        }
-
-        return $selected;
-    }
-
-    /**
-     * Begin variant selection based on ratio distribution.
-     *
-     * @param array $variants Array of [key => ratio]
-     * @return string|null
-     */
-    public function start(array $variants): ?string
-    {
-        if (empty($variants)) {
-            return null;
-        }
-
-        // Check if already selected via request/cookie
-        $existing = $this->getKeyFromRequest();
-        if ($existing !== null && isset($variants[$existing])) {
-            return $existing;
-        }
-
-        // Get current counts for all variants
-        $counts = $this->prepareVariants($variants);
-
-        // Find first variant that hasn't reached its quota
-        foreach ($variants as $key => $maxValue) {
-            if ($counts[$key] >= $maxValue) {
-                continue;
-            }
-
-            // Increment counter for this variant
-            $this->store->increment($key);
-
-            return $key;
-        }
-
-        // All variants reached their quota, reset and try again
-        $this->resetCounters($counts);
-
-        return $this->start($variants);
-    }
-
-    /**
-     * Get variant key from request or cookie.
-     *
-     * @return string|null
-     */
-    private function getKeyFromRequest(): ?string
-    {
-        return request()->get($this->key)
-            ?? request()->cookie($this->key)
-            ?? $_GET[$this->key] ?? null
-            ?? $_COOKIE[$this->key] ?? null;
-    }
-
-    /**
-     * Get current counts for all variants.
-     *
-     * @param array $variants
-     * @return array
-     */
-    private function prepareVariants(array $variants = []): array
-    {
-        $counts = [];
-
-        foreach ($variants as $key => $ratio) {
-            $counts[$key] = (int) $this->store->get($key, 0);
-        }
-
-        return $counts;
-    }
-
-    /**
-     * Reset counters for all variants.
-     *
-     * @param array $counts
-     * @return void
-     */
-    private function resetCounters(array $counts): void
-    {
-        foreach ($counts as $key => $value) {
-            if ($value > 0) {
-                $this->store->decrement($key, $value);
+            // If this flow is under its target ratio, assign to it
+            if ($currentRatio < $targetRatio) {
+                $key = "experiment:{$experiment->id}:flow:{$flow->id}";
+                $this->redisCounter->incrementAndGet($key);
+                return $flow;
             }
         }
+
+        // All flows are at or above their target ratios, assign to the one furthest below
+        $mostUnderserved = null;
+        $largestDifference = 0;
+
+        foreach ($flows as $flow) {
+            $targetRatio = $flow->pivot->ratio / 100;
+            $currentRatio = $flowCounters[$flow->id] / $totalAssigned;
+            $difference = $targetRatio - $currentRatio;
+
+            if ($difference > $largestDifference) {
+                $largestDifference = $difference;
+                $mostUnderserved = $flow;
+            }
+        }
+
+        if ($mostUnderserved) {
+            $key = "experiment:{$experiment->id}:flow:{$mostUnderserved->id}";
+            $this->redisCounter->incrementAndGet($key);
+            return $mostUnderserved;
+        }
+
+        // Fallback: return first flow
+        $firstFlow = $flows->first();
+        $key = "experiment:{$experiment->id}:flow:{$firstFlow->id}";
+        $this->redisCounter->incrementAndGet($key);
+        return $firstFlow;
     }
 
     /**
-     * Get the counter value for a specific variant.
+     * Get the counter value for a specific flow in an experiment.
      *
-     * @param string $key
+     * @param int $experimentId
+     * @param int $flowId
      * @return int
      */
-    public function getCount(string $key): int
+    public function getFlowCount(int $experimentId, int $flowId): int
     {
-        return (int) $this->store->get($key, 0);
+        $key = "experiment:{$experimentId}:flow:{$flowId}";
+        return $this->redisCounter->getCounter($key);
     }
 
     /**
@@ -216,16 +116,11 @@ class ExperimentService
      */
     public function clearExperimentCounters(Experiment $experiment): void
     {
-        $flows = $experiment->flows;
-
-        foreach ($flows as $flow) {
-            $key = "exp_{$experiment->id}_flow_{$flow->id}";
-            $this->store->forget($key);
-        }
+        $this->redisCounter->resetExperimentCounters($experiment->id);
     }
 
     /**
-     * Get statistics for an experiment.
+     * Get statistics for an experiment from Redis counters.
      *
      * @param Experiment $experiment
      * @return array
@@ -236,9 +131,10 @@ class ExperimentService
         $stats = [];
         $total = 0;
 
+        $counters = $this->redisCounter->getExperimentCounters($experiment->id);
+
         foreach ($flows as $flow) {
-            $key = "exp_{$experiment->id}_flow_{$flow->id}";
-            $count = $this->getCount($key);
+            $count = $counters[$flow->id] ?? 0;
             $total += $count;
 
             $stats[] = [
@@ -251,7 +147,7 @@ class ExperimentService
 
         // Calculate percentages
         foreach ($stats as &$stat) {
-            $stat['percentage'] = $total > 0 ? ($stat['count'] / $total) * 100 : 0;
+            $stat['percentage'] = $total > 0 ? round(($stat['count'] / $total) * 100, 2) : 0;
         }
 
         return [

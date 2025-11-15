@@ -40,10 +40,42 @@
         </div>
     </div>
 
+    <!-- Tabs Navigation -->
+    <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            @php
+                $currentTab = request('default', 'default');
+            @endphp
+            <a href="{{ route('remote-config.flows.index', array_merge(request()->except('default'), ['default' => 'default'])) }}"
+               class="tab-link {{ $currentTab !== 'variants' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors duration-200">
+                <svg class="inline-block -ml-0.5 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Flows
+                <span class="ml-2 inline-flex items-center rounded-full {{ $currentTab !== 'variants' ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-600' }} px-2.5 py-0.5 text-xs font-medium">
+                    {{ $stats['default'] ?? 0 }}
+                </span>
+            </a>
+            <a href="{{ route('remote-config.flows.index', array_merge(request()->except('default'), ['default' => 'variants'])) }}"
+               class="tab-link {{ $currentTab === 'variants' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors duration-200">
+                <svg class="inline-block -ml-0.5 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                Variants
+                <span class="ml-2 inline-flex items-center rounded-full {{ $currentTab === 'variants' ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-600' }} px-2.5 py-0.5 text-xs font-medium">
+                    {{ $stats['variants'] ?? 0 }}
+                </span>
+            </a>
+        </nav>
+    </div>
+
     <!-- Filters -->
     <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
         <div class="px-4 py-5 sm:p-6">
-            <form method="GET" action="{{ route('remote-config.flows.index') }}" class="space-y-4">
+            <form method="GET" action="{{ route('remote-config.flows.index') }}" class="space-y-4" id="filter-form">
+                <!-- Hidden field to preserve tab selection -->
+                <input type="hidden" name="default" value="{{ request('default', 'default') }}">
+
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
                     <div>
                         <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
@@ -104,7 +136,17 @@
                         </span>
                     </td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
-                        {{ $flow->name }}
+                        <div class="flex items-center gap-2">
+                            <span>{{ $flow->name }}</span>
+                            @if($flow->is_default)
+                                <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+                                    <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                                    </svg>
+                                    Default
+                                </span>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-3 py-4 text-sm text-gray-500 max-w-md truncate">
                         <code class="text-xs bg-gray-100 px-2 py-1 rounded">
@@ -152,7 +194,7 @@
         <!-- Pagination -->
         @if($flows->hasPages())
         <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-            {{ $flows->links() }}
+            {{ $flows->appends(request()->except('page'))->links() }}
         </div>
         @endif
     </div>

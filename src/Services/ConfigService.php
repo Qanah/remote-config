@@ -60,8 +60,7 @@ class ConfigService
         $experimentable,
         string $type,
         array $attributes = [],
-        ?string $testOverrideIp = null,
-        ?int $testWinnerId = null
+        ?string $testOverrideIp = null
     ): array {
         // Get base configuration
         $baseFlow = Flow::getConfig($type);
@@ -71,15 +70,15 @@ class ConfigService
             return $config;
         }
 
-        // Check for test override first (highest priority)
-        if ($testOverrideIp && config('remote-config.testing_enabled', true)) {
-            $testOverride = new TestOverride($testOverrideIp, $type);
-            $testData = $testOverride->get();
-
-            if ($testData && isset($testData['content'])) {
-                return array_replace_recursive($config, $testData['content']);
-            }
-        }
+//        // Check for test override first (highest priority)
+//        if ($testOverrideIp && config('remote-config.testing_enabled', true)) {
+//            $testOverride = new TestOverride($testOverrideIp, $type);
+//            $testData = $testOverride->get();
+//
+//            if ($testData && isset($testData['content'])) {
+//                return array_replace_recursive($config, $testData['content']);
+//            }
+//        }
 
         // Check for winner configuration (second priority)
         $platform = $this->extractAttribute($experimentable, 'platform', $attributes);
@@ -87,16 +86,11 @@ class ConfigService
         $language = $this->extractAttribute($experimentable, 'language', $attributes);
 
         if ($platform && $country && $language) {
-            $winner = null;
 
-            if ($testWinnerId) {
-                $winner = Winner::find($testWinnerId);
-            } else {
-                $winner = Winner::getWinner($type, $platform, $country, $language);
-            }
+            $winner = Winner::getWinner($type, $platform, $country, $language);
 
             if ($winner) {
-                return array_replace_recursive($config, $winner->content);
+                $config = array_replace_recursive($config, $winner->content);
             }
         }
 
@@ -180,7 +174,6 @@ class ConfigService
             'experimentable_id' => $experimentable->id,
             'experiment_id' => $experiment->id,
             'flow_id' => $selectedFlow->id,
-            'cookie_name' => 'exp_' . $experiment->id . '_' . $experimentable->id,
         ]);
     }
 
@@ -195,6 +188,7 @@ class ConfigService
         $assignments = ExperimentAssignment::where('experiment_id', $experiment->id)->get();
 
         $stats = [];
+        $byFlow = [];
         $total = $assignments->count();
 
         foreach ($experiment->flows as $flow) {
@@ -207,11 +201,14 @@ class ConfigService
                 'assigned_count' => $count,
                 'percentage' => round($percentage, 2),
             ];
+
+            $byFlow[$flow->id] = $count;
         }
 
         return [
             'total_assignments' => $total,
             'flows' => $stats,
+            'by_flow' => $byFlow,
         ];
     }
 

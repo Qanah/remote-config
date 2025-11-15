@@ -102,7 +102,9 @@ class ExperimentController extends Controller
     public function create(): View
     {
         $flowTypes = config('remote-config.flow_types', []);
-        $flows = Flow::where('is_active', true)->get();
+        $flows = Flow::where('is_active', true)
+            ->where('is_default', false)
+            ->get();
         $platforms = config('remote-config.targeting.platforms', []);
         $countries = config('remote-config.targeting.countries', []);
         $languages = config('remote-config.targeting.languages', []);
@@ -200,7 +202,9 @@ class ExperimentController extends Controller
     {
         $experiment->load('flows');
         $flowTypes = config('remote-config.flow_types', []);
-        $flows = Flow::where('is_active', true)->get();
+        $flows = Flow::where('is_active', true)
+            ->where('is_default', false)
+            ->get();
         $platforms = config('remote-config.targeting.platforms', []);
         $countries = config('remote-config.targeting.countries', []);
         $languages = config('remote-config.targeting.languages', []);

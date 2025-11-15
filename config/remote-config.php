@@ -186,22 +186,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Cookie Configuration
+    | Redis Configuration
     |--------------------------------------------------------------------------
     |
-    | Configuration for experiment assignment cookies. The cookie stores
-    | the assigned variant to ensure consistent experience across sessions.
+    | Configuration for Redis-based experiment counter storage. Redis is used
+    | for atomic increment operations to distribute users across variants
+    | based on configured ratios.
     |
     */
 
-    'cookie' => [
-        'name_prefix' => 'exp_',
-        'ttl' => 60 * 24 * 365, // 1 year in minutes
-        'path' => '/',
-        'domain' => null,
-        'secure' => env('SESSION_SECURE_COOKIE', false),
-        'http_only' => true,
-        'same_site' => 'lax',
+    'redis' => [
+        'connection' => env('REMOTE_CONFIG_REDIS_CONNECTION', 'default'),
+        'key_prefix' => 'remote_config:counter:',
     ],
 
     /*

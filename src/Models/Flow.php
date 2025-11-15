@@ -78,7 +78,7 @@ class Flow extends Model
     protected function displayLabel(): Attribute
     {
         return Attribute::make(
-            get: fn () => "FLOW {$this->type} #{$this->id} {$this->name}"
+            get: fn () => "#{$this->id} - " . strtoupper($this->type) . " [{$this->name}]",
         );
     }
 
