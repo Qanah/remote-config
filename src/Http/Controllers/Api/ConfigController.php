@@ -149,12 +149,9 @@ class ConfigController extends Controller
                 'experimentable_type' => get_class($user),
                 'experimentable_id' => $user->id,
                 'experiment_id' => $validated['experiment_id'],
-                'experiment_name' => $assignment->experiment->name ?? $assignment->experiment->type,
+                'flow_id' => $validated['flow_id'],
                 'status' => 'confirmed',
-                'metadata' => array_merge([
-                    'flow_id' => $validated['flow_id'],
-                    'confirmed_at' => now()->toDateTimeString(),
-                ], $validated['metadata'] ?? []),
+                'metadata' => $validated['metadata'] ?? [],
             ]);
 
             return response()->json([

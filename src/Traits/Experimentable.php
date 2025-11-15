@@ -139,33 +139,29 @@ trait Experimentable
      * Confirm an experiment.
      * User can only confirm experiments they are assigned to.
      *
-     * @param string $experimentName
+     * @param int $experimentId
+     * @param int $flowId
      * @param array $metadata
      * @return Confirmation|null
      * @throws \Exception
      */
-    public function confirmExperiment(string $experimentName, array $metadata = []): ?Confirmation
+    public function confirmExperiment(int $experimentId, int $flowId, array $metadata = []): ?Confirmation
     {
-        $experiment = Experiment::where('name', $experimentName)->first();
-
-        if (!$experiment) {
-            throw new \Exception("Experiment '{$experimentName}' not found.");
-        }
-
-        // Check if user has an assignment for this experiment
+        // Check if user has an assignment for this experiment with this flow
         $assignment = ExperimentAssignment::where('experimentable_type', get_class($this))
             ->where('experimentable_id', $this->id)
-            ->where('experiment_id', $experiment->id)
+            ->where('experiment_id', $experimentId)
+            ->where('flow_id', $flowId)
             ->first();
 
         if (!$assignment) {
-            throw new \Exception("User is not assigned to experiment '{$experimentName}'. Cannot confirm unassigned experiment.");
+            throw new \Exception("User is not assigned to experiment ID {$experimentId} with flow ID {$flowId}. Cannot confirm unassigned experiment.");
         }
 
         // Check if already confirmed
         $existingConfirmation = Confirmation::where('experimentable_type', get_class($this))
             ->where('experimentable_id', $this->id)
-            ->where('experiment_id', $experiment->id)
+            ->where('experiment_id', $experimentId)
             ->where('status', 'confirmed')
             ->first();
 
@@ -173,28 +169,25 @@ trait Experimentable
             return $existingConfirmation; // Already confirmed, return existing
         }
 
-        // Create confirmation with assignment details
+        // Create confirmation
         return Confirmation::create([
             'experimentable_type' => get_class($this),
             'experimentable_id' => $this->id,
-            'experiment_id' => $experiment->id,
-            'experiment_name' => $experimentName,
+            'experiment_id' => $experimentId,
+            'flow_id' => $flowId,
             'status' => 'confirmed',
-            'metadata' => array_merge([
-                'flow_id' => $assignment->flow_id,
-                'confirmed_at' => now()->toDateTimeString(),
-            ], $metadata),
+            'metadata' => $metadata,
         ]);
     }
 
     /**
      * Check if user has confirmed an experiment.
      *
-     * @param string $experimentName
+     * @param int $experimentId
      * @return bool
      */
-    public function hasConfirmedExperiment(string $experimentName): bool
+    public function hasConfirmedExperiment(int $experimentId): bool
     {
-        return Confirmation::hasConfirmed($this, $experimentName);
+        return Confirmation::hasConfirmed($this, $experimentId);
     }
 }

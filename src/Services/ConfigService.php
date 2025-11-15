@@ -233,59 +233,6 @@ class ConfigService
     }
 
     /**
-     * Confirm an experiment for a user.
-     * Validates that the user is assigned to the experiment before confirming.
-     *
-     * @param mixed $experimentable
-     * @param string $experimentName
-     * @param array $metadata
-     * @return Confirmation|null
-     * @throws \Exception
-     */
-    public function confirmExperiment($experimentable, string $experimentName, array $metadata = []): ?Confirmation
-    {
-        $experiment = Experiment::where('name', $experimentName)->first();
-
-        if (!$experiment) {
-            throw new \Exception("Experiment '{$experimentName}' not found.");
-        }
-
-        // Check if user has an assignment for this experiment
-        $assignment = ExperimentAssignment::where('experimentable_type', get_class($experimentable))
-            ->where('experimentable_id', $experimentable->id)
-            ->where('experiment_id', $experiment->id)
-            ->first();
-
-        if (!$assignment) {
-            throw new \Exception("User is not assigned to experiment '{$experimentName}'. Cannot confirm unassigned experiment.");
-        }
-
-        // Check if already confirmed
-        $existingConfirmation = Confirmation::where('experimentable_type', get_class($experimentable))
-            ->where('experimentable_id', $experimentable->id)
-            ->where('experiment_id', $experiment->id)
-            ->where('status', 'confirmed')
-            ->first();
-
-        if ($existingConfirmation) {
-            return $existingConfirmation; // Already confirmed
-        }
-
-        // Create confirmation with assignment details
-        return Confirmation::create([
-            'experimentable_type' => get_class($experimentable),
-            'experimentable_id' => $experimentable->id,
-            'experiment_id' => $experiment->id,
-            'experiment_name' => $experimentName,
-            'status' => 'confirmed',
-            'metadata' => array_merge([
-                'flow_id' => $assignment->flow_id,
-                'confirmed_at' => now()->toDateTimeString(),
-            ], $metadata),
-        ]);
-    }
-
-    /**
      * Merge configurations recursively.
      *
      * @param array $base

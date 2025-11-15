@@ -12,7 +12,7 @@ class Confirmation extends Model
         'experimentable_type',
         'experimentable_id',
         'experiment_id',
-        'experiment_name',
+        'flow_id',
         'status',
         'metadata',
     ];
@@ -46,13 +46,21 @@ class Confirmation extends Model
     }
 
     /**
+     * The flow variant that was confirmed.
+     */
+    public function flow(): BelongsTo
+    {
+        return $this->belongsTo(Flow::class);
+    }
+
+    /**
      * Check if user has confirmed an experiment.
      */
-    public static function hasConfirmed($experimentable, string $experimentName): bool
+    public static function hasConfirmed($experimentable, int $experimentId): bool
     {
         return self::where('experimentable_type', get_class($experimentable))
             ->where('experimentable_id', $experimentable->id)
-            ->where('experiment_name', $experimentName)
+            ->where('experiment_id', $experimentId)
             ->where('status', 'confirmed')
             ->exists();
     }
