@@ -215,34 +215,4 @@ class ConfigService
         ];
     }
 
-    /**
-     * Remove assignment for a user.
-     *
-     * @param mixed $experimentable
-     * @param int $experimentId
-     * @return bool
-     */
-    public function removeAssignment($experimentable, int $experimentId): bool
-    {
-        $assignment = ExperimentAssignment::getAssignment($experimentable, $experimentId);
-
-        if ($assignment) {
-            $assignment->logAndDelete();
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Merge configurations recursively.
-     *
-     * @param array $base
-     * @param array $override
-     * @return array
-     */
-    public function mergeConfigs(array $base, array $override): array
-    {
-        return array_replace_recursive($base, $override);
-    }
 }

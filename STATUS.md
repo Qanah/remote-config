@@ -64,17 +64,17 @@ The core package is fully operational with API endpoints, database structure, bu
 - [x] **Experimentable** - Add to User model for experiment participation
 - [x] **HasDynamicRelation** - Dynamic polymorphic relationships
 
-### **7. API Endpoints** ✅ (4 endpoints)
-- [x] `GET /api/config` - Get configuration with experiments
+### **7. API Endpoints** ✅ (3 endpoints)
+- [x] `GET /api/config` - Get configuration with experiments (includes automatic test override support)
 - [x] `POST /api/config/confirm` - Confirm experiment
 - [x] `POST /api/config/issue` - Report validation issues
-- [x] `GET /api/config/testing` - Test flow preview
 
 **All endpoints:**
 - Fully documented in README
 - Request validation
 - JSON responses
 - Error handling
+- Test overrides work automatically via IP detection
 
 ### **8. Admin Controllers** ✅ (4 controllers)
 - [x] **FlowController** - CRUD for flows with JSONEditor
@@ -90,7 +90,7 @@ The core package is fully operational with API endpoints, database structure, bu
 - Toggle active/inactive
 
 ### **9. Routes** ✅ (Web + API)
-- [x] API routes configured (4 endpoints)
+- [x] API routes configured (3 endpoints)
 - [x] Admin routes configured (20+ routes)
 - [x] Route naming conventions
 - [x] Middleware configuration

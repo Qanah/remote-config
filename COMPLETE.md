@@ -17,10 +17,9 @@
 - ✅ Service Provider with auto-discovery
 
 ### **2. API Layer** ✅
-- ✅ GET /api/config - Get configuration
+- ✅ GET /api/config - Get configuration (with automatic test override support)
 - ✅ POST /api/config/confirm - Confirm experiment
 - ✅ POST /api/config/issue - Report issues
-- ✅ GET /api/config/testing - Test flow preview
 
 ### **3. Admin Panel** ✅
 - ✅ 4 admin controllers (Flow, Experiment, Winner, Testing)
@@ -257,7 +256,7 @@ $testOverride->set($flowId, 3600); // TTL in seconds
 | Services | 2 | ✅ Complete |
 | Traits | 2 | ✅ Complete |
 | Observers | 4 | ✅ Complete |
-| API Endpoints | 4 | ✅ Complete |
+| API Endpoints | 3 | ✅ Complete |
 | Helper Functions | 8 | ✅ Complete |
 | Views (Flow) | 4 | ✅ Complete |
 | Views (Other) | 9 | ⏳ Optional |

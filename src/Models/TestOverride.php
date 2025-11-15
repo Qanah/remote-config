@@ -61,21 +61,6 @@ class TestOverride
     }
 
     /**
-     * Find a test override by key.
-     */
-    public static function find(string $key): ?array
-    {
-        $model = new self();
-        $data = $model->cache()->get(self::CACHE_PREFIX . $key);
-
-        if (!$data) {
-            return null;
-        }
-
-        return array_merge(['key' => $key], $data);
-    }
-
-    /**
      * Find a test override by IP and type.
      */
     public static function findByIpAndType(string $ip, string $type): ?array

@@ -28,8 +28,5 @@ if ($apiConfig['enabled'] ?? true) {
 
             // Report validation issue
             Route::post('/issue', [ConfigController::class, 'reportIssue'])->name('issue');
-
-            // Get test flow (for QA/testing)
-            Route::get('/testing', [ConfigController::class, 'testingFlow'])->name('testing');
         });
 }
