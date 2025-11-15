@@ -2,131 +2,51 @@
 
 namespace Jawabapp\RemoteConfig\Models;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 
 /**
  * Test Override Model - Redis-based storage for IP-based test flows.
- * This is not a database model but uses Redis for temporary test configurations.
+ * Stores testing overrides as Redis hashes for better performance and simpler structure.
  */
 class TestOverride
 {
-    protected string $ip;
-    protected string $flowType;
-    protected ?int $flowId;
-    protected ?array $content;
+    private string $pattern = 'remote_config_testing:*';
+    private string $connection;
 
-    public function __construct(string $ip, string $flowType)
+    public function __construct()
     {
-        $this->ip = $ip;
-        $this->flowType = $flowType;
+        $this->connection = config('remote-config.redis.connection', 'default');
     }
 
     /**
-     * Get cache key for this test override.
+     * Get all test overrides.
      */
-    protected function getCacheKey(): string
+    public static function all()
     {
-        $prefix = config('remote-config.testing.cache_key_prefix', 'remote_config_test_');
-        return $prefix . $this->flowType . '_' . str_replace('.', '_', $this->ip);
+        $model = new self();
+        $keys = Redis::connection($model->connection)->keys($model->pattern);
+
+        return collect($keys)->map(function ($key) use ($model) {
+            $data = Redis::connection($model->connection)->hgetall($key);
+            return array_merge([
+                'key' => str_replace($model->getPatternPrefix(), '', $key)
+            ], $data);
+        });
     }
 
     /**
-     * Set a test override for this IP and flow type.
+     * Get all test overrides for a specific type.
      */
-    public function set(int $flowId, ?int $ttl = null): bool
+    public static function getAllForType(string $type): array
     {
-        $flow = Flow::find($flowId);
-
-        if (!$flow) {
-            return false;
-        }
-
-        $this->flowId = $flowId;
-        $this->content = $flow->content;
-
-        $ttl = $ttl ?? config('remote-config.cache_ttl', 604800);
-        $connection = config('remote-config.testing.redis_connection', 'default');
-
-        $data = [
-            'flow_id' => $this->flowId,
-            'content' => $this->content,
-            'created_at' => now()->toIso8601String(),
-        ];
-
-        if (config('cache.default') === 'redis') {
-            return Cache::store('redis')->put($this->getCacheKey(), json_encode($data), $ttl);
-        }
-
-        return Cache::put($this->getCacheKey(), json_encode($data), $ttl);
-    }
-
-    /**
-     * Get the test override for this IP and flow type.
-     */
-    public function get(): ?array
-    {
-        if (config('cache.default') === 'redis') {
-            $cached = Cache::store('redis')->get($this->getCacheKey());
-        } else {
-            $cached = Cache::get($this->getCacheKey());
-        }
-
-        if (!$cached) {
-            return null;
-        }
-
-        $data = json_decode($cached, true);
-
-        $this->flowId = $data['flow_id'] ?? null;
-        $this->content = $data['content'] ?? null;
-
-        return $data;
-    }
-
-    /**
-     * Delete the test override for this IP and flow type.
-     */
-    public function delete(): bool
-    {
-        if (config('cache.default') === 'redis') {
-            return Cache::store('redis')->forget($this->getCacheKey());
-        }
-
-        return Cache::forget($this->getCacheKey());
-    }
-
-    /**
-     * Get all test overrides for a flow type.
-     */
-    public static function getAllForType(string $flowType): array
-    {
-        $prefix = config('remote-config.testing.cache_key_prefix', 'remote_config_test_');
-        $pattern = $prefix . $flowType . '_*';
+        $all = self::all();
 
         $overrides = [];
-
-        if (config('cache.default') === 'redis') {
-            $connection = config('remote-config.testing.redis_connection', 'default');
-            $redis = Redis::connection($connection);
-            $keys = $redis->keys($pattern);
-
-            foreach ($keys as $key) {
-                // Remove prefix from key name
-                $keyName = str_replace('laravel_database_', '', $key);
-                $data = Cache::store('redis')->get($keyName);
-
-                if ($data) {
-                    $decoded = json_decode($data, true);
-                    $ip = str_replace($prefix . $flowType . '_', '', $keyName);
-                    $ip = str_replace('_', '.', $ip);
-
-                    $overrides[] = [
-                        'ip' => $ip,
-                        'flow_id' => $decoded['flow_id'] ?? null,
-                        'content' => $decoded['content'] ?? null,
-                        'created_at' => $decoded['created_at'] ?? null,
-                    ];
+        foreach ($all as $item) {
+            // Check if required keys exist
+            if (isset($item['type']) && isset($item['ip']) && isset($item['flow_id'])) {
+                if ($item['type'] === $type) {
+                    $overrides[$item['ip']] = (int) $item['flow_id'];
                 }
             }
         }
@@ -135,34 +55,109 @@ class TestOverride
     }
 
     /**
-     * Check if a test override exists for this IP and flow type.
+     * Find a test override by key.
      */
-    public function exists(): bool
+    public static function find(string $key): ?array
     {
-        return $this->get() !== null;
+        $all = self::all();
+        $found = $all->firstWhere('key', $key);
+        return $found ? $found : null;
     }
 
     /**
-     * Get the flow ID.
+     * Find a test override by IP and type.
      */
-    public function getFlowId(): ?int
+    public static function findByIpAndType(string $ip, string $type): ?array
     {
-        if ($this->flowId === null) {
-            $this->get();
-        }
+        $all = self::all();
 
-        return $this->flowId;
+        // Filter with isset checks to avoid errors
+        $found = $all->filter(function($item) use ($ip, $type) {
+            return isset($item['ip']) && isset($item['type'])
+                && $item['ip'] === $ip
+                && $item['type'] === $type;
+        })->first();
+
+        return $found ? $found : null;
     }
 
     /**
-     * Get the content.
+     * Create a new test override.
      */
-    public function getContent(): ?array
+    public static function create(array $data): string
     {
-        if ($this->content === null) {
-            $this->get();
+        $model = new self();
+        $key = uniqid('test_');
+        $fullKey = $model->getPatternPrefix() . $key;
+
+        Redis::connection($model->connection)->hmset($fullKey, $data);
+
+        return $key;
+    }
+
+    /**
+     * Update a test override.
+     */
+    public static function update(string $key, array $data): void
+    {
+        $model = new self();
+        $fullKey = $model->getPatternPrefix() . $key;
+
+        Redis::connection($model->connection)->hmset($fullKey, $data);
+    }
+
+    /**
+     * Delete a test override by key.
+     */
+    public static function delete(string $key): void
+    {
+        $model = new self();
+        $fullKey = $model->getPatternPrefix() . $key;
+
+        Redis::connection($model->connection)->del($fullKey);
+    }
+
+    /**
+     * Delete a test override by IP and type.
+     */
+    public static function deleteByIpAndType(string $ip, string $type): bool
+    {
+        $found = self::findByIpAndType($ip, $type);
+
+        if ($found && isset($found['key'])) {
+            self::delete($found['key']);
+            return true;
         }
 
-        return $this->content;
+        return false;
+    }
+
+    /**
+     * Clear all test overrides.
+     */
+    public static function clear(): void
+    {
+        $model = new self();
+        $keys = Redis::connection($model->connection)->keys($model->pattern);
+
+        if (!empty($keys)) {
+            Redis::connection($model->connection)->del($keys);
+        }
+    }
+
+    /**
+     * Get the pattern prefix (without wildcard).
+     */
+    private function getPatternPrefix(): string
+    {
+        return rtrim($this->pattern, '*');
+    }
+
+    /**
+     * Check if a test override exists for IP and type.
+     */
+    public static function exists(string $ip, string $type): bool
+    {
+        return self::findByIpAndType($ip, $type) !== null;
     }
 }

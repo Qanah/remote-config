@@ -15,7 +15,7 @@ class WinnerController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Winner::query()->with('flow')->orderBy('created_at', 'desc');
+        $query = Winner::query()->orderBy('created_at', 'desc');
 
         // Filter by type
         if ($request->filled('type')) {
@@ -59,14 +59,12 @@ class WinnerController extends Controller
     public function create(): View
     {
         $flowTypes = config('remote-config.flow_types', []);
-        $flows = Flow::where('is_active', true)->get();
         $platforms = config('remote-config.targeting.platforms', []);
         $countries = config('remote-config.targeting.countries', []);
         $languages = config('remote-config.targeting.languages', []);
 
         return view('remote-config::winner.create', compact(
             'flowTypes',
-            'flows',
             'platforms',
             'countries',
             'languages'
@@ -83,7 +81,6 @@ class WinnerController extends Controller
             'platform' => 'required|string|max:255',
             'country_code' => 'required|string|max:2',
             'language' => 'required|string|max:10',
-            'flow_id' => 'nullable|exists:' . (config('remote-config.table_prefix', '') . 'flows') . ',id',
             'content' => 'required|json',
         ]);
 
@@ -116,7 +113,6 @@ class WinnerController extends Controller
     public function show(Winner $winner): View
     {
         $winner->load([
-            'flow',
             'logs' => function ($query) {
                 $query->orderBy('created_at', 'desc')->limit(10);
             }
@@ -131,7 +127,6 @@ class WinnerController extends Controller
     public function edit(Winner $winner): View
     {
         $flowTypes = config('remote-config.flow_types', []);
-        $flows = Flow::where('is_active', true)->get();
         $platforms = config('remote-config.targeting.platforms', []);
         $countries = config('remote-config.targeting.countries', []);
         $languages = config('remote-config.targeting.languages', []);
@@ -139,7 +134,6 @@ class WinnerController extends Controller
         return view('remote-config::winner.edit', compact(
             'winner',
             'flowTypes',
-            'flows',
             'platforms',
             'countries',
             'languages'
@@ -156,7 +150,6 @@ class WinnerController extends Controller
             'platform' => 'required|string|max:255',
             'country_code' => 'required|string|max:2',
             'language' => 'required|string|max:10',
-            'flow_id' => 'nullable|exists:' . (config('remote-config.table_prefix', '') . 'flows') . ',id',
             'content' => 'required|json',
         ]);
 

@@ -60,16 +60,6 @@
                         </select>
                     </div>
                     <div class="sm:col-span-full">
-                        <label for="flow_id" class="block text-sm font-medium text-gray-700">Flow (Optional)</label>
-                        <select id="flow_id" name="flow_id" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-base px-3 py-2">
-                            <option value="">None - Use custom content</option>
-                            @foreach($flows as $flow)
-                                <option value="{{ $flow->id }}" {{ $winner->flow_id == $flow->id ? 'selected' : '' }}>Flow #{{ $flow->id }} - {{ $flow->type }}</option>
-                            @endforeach
-                        </select>
-                        <p class="mt-2 text-sm text-gray-500">Optional. Link to an existing flow or use custom JSON content below.</p>
-                    </div>
-                    <div class="sm:col-span-full">
                         <label for="content" class="block text-sm font-medium text-gray-700">Content (JSON) *</label>
                         <div class="mt-1">
                             @include('remote-config::components.jsoneditor', [

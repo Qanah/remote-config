@@ -47,7 +47,6 @@
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Platform</th>
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Country</th>
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Language</th>
-                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Flow</th>
                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
                     <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
                         <span class="sr-only">Actions</span>
@@ -64,13 +63,6 @@
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ $winner->platform }}</td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ $winner->country_code }}</td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ $winner->language }}</td>
-                    <td class="px-3 py-4 text-sm text-gray-500">
-                        @if($winner->flow)
-                            Flow #{{ $winner->flow_id }}
-                        @else
-                            <span class="text-gray-400">Custom content</span>
-                        @endif
-                    </td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm">
                         <form action="{{ route('remote-config.winners.toggle', $winner) }}" method="POST">
                             @csrf
@@ -86,7 +78,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-3 py-8 text-center text-sm text-gray-500">
+                    <td colspan="7" class="px-3 py-8 text-center text-sm text-gray-500">
                         <h3 class="mt-2 text-sm font-semibold text-gray-900">No winners found</h3>
                         <p class="mt-1 text-sm text-gray-500">Get started by creating a winner.</p>
                     </td>

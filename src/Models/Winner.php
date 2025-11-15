@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Winner extends Model
 {
     protected $fillable = [
-        'flow_id',
         'type',
         'content',
         'platform',
@@ -29,14 +28,6 @@ class Winner extends Model
 
         $prefix = config('remote-config.table_prefix', '');
         $this->table = $prefix . 'winners';
-    }
-
-    /**
-     * The flow this winner is based on (optional).
-     */
-    public function flow(): BelongsTo
-    {
-        return $this->belongsTo(Flow::class);
     }
 
     /**
