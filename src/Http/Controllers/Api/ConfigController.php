@@ -8,6 +8,7 @@ use Jawabapp\RemoteConfig\Http\Controllers\Controller;
 use Jawabapp\RemoteConfig\Services\ConfigService;
 use Jawabapp\RemoteConfig\Models\Confirmation;
 use Jawabapp\RemoteConfig\Models\ValidationIssue;
+use Jawabapp\RemoteConfig\Models\ExperimentAssignment;
 
 class ConfigController extends Controller
 {
@@ -84,6 +85,7 @@ class ConfigController extends Controller
 
     /**
      * Confirm experiment completion.
+     * User can only confirm experiments they are assigned to.
      *
      * @param Request $request
      * @return JsonResponse
@@ -99,8 +101,9 @@ class ConfigController extends Controller
             ], 401);
         }
 
-        $request->validate([
-            'experiment_name' => 'required|string',
+        $validated = $request->validate([
+            'experiment_id' => 'required|integer',
+            'flow_id' => 'required|integer',
             'metadata' => 'nullable|array',
         ]);
 
@@ -111,19 +114,60 @@ class ConfigController extends Controller
             ], 400);
         }
 
-        $confirmation = Confirmation::create([
-            'experimentable_type' => get_class($user),
-            'experimentable_id' => $user->id,
-            'experiment_name' => $request->input('experiment_name'),
-            'status' => 'confirmed',
-            'metadata' => $request->input('metadata', []),
-        ]);
+        try {
+            // Validate that user is assigned to this experiment with this flow
+            $assignment = ExperimentAssignment::where('experimentable_type', get_class($user))
+                ->where('experimentable_id', $user->id)
+                ->where('experiment_id', $validated['experiment_id'])
+                ->where('flow_id', $validated['flow_id'])
+                ->first();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Experiment confirmed successfully',
-            'data' => $confirmation,
-        ]);
+            if (!$assignment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User is not assigned to this experiment with the specified flow.',
+                ], 400);
+            }
+
+            // Check if already confirmed
+            $existingConfirmation = Confirmation::where('experimentable_type', get_class($user))
+                ->where('experimentable_id', $user->id)
+                ->where('experiment_id', $validated['experiment_id'])
+                ->where('status', 'confirmed')
+                ->first();
+
+            if ($existingConfirmation) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Experiment already confirmed',
+                    'data' => $existingConfirmation,
+                ]);
+            }
+
+            // Create confirmation
+            $confirmation = Confirmation::create([
+                'experimentable_type' => get_class($user),
+                'experimentable_id' => $user->id,
+                'experiment_id' => $validated['experiment_id'],
+                'experiment_name' => $assignment->experiment->name ?? $assignment->experiment->type,
+                'status' => 'confirmed',
+                'metadata' => array_merge([
+                    'flow_id' => $validated['flow_id'],
+                    'confirmed_at' => now()->toDateTimeString(),
+                ], $validated['metadata'] ?? []),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Experiment confirmed successfully',
+                'data' => $confirmation,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

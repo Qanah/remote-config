@@ -137,22 +137,53 @@ trait Experimentable
 
     /**
      * Confirm an experiment.
+     * User can only confirm experiments they are assigned to.
      *
      * @param string $experimentName
      * @param array $metadata
-     * @return Confirmation
+     * @return Confirmation|null
+     * @throws \Exception
      */
-    public function confirmExperiment(string $experimentName, array $metadata = []): Confirmation
+    public function confirmExperiment(string $experimentName, array $metadata = []): ?Confirmation
     {
         $experiment = Experiment::where('name', $experimentName)->first();
 
+        if (!$experiment) {
+            throw new \Exception("Experiment '{$experimentName}' not found.");
+        }
+
+        // Check if user has an assignment for this experiment
+        $assignment = ExperimentAssignment::where('experimentable_type', get_class($this))
+            ->where('experimentable_id', $this->id)
+            ->where('experiment_id', $experiment->id)
+            ->first();
+
+        if (!$assignment) {
+            throw new \Exception("User is not assigned to experiment '{$experimentName}'. Cannot confirm unassigned experiment.");
+        }
+
+        // Check if already confirmed
+        $existingConfirmation = Confirmation::where('experimentable_type', get_class($this))
+            ->where('experimentable_id', $this->id)
+            ->where('experiment_id', $experiment->id)
+            ->where('status', 'confirmed')
+            ->first();
+
+        if ($existingConfirmation) {
+            return $existingConfirmation; // Already confirmed, return existing
+        }
+
+        // Create confirmation with assignment details
         return Confirmation::create([
             'experimentable_type' => get_class($this),
             'experimentable_id' => $this->id,
-            'experiment_id' => $experiment?->id,
+            'experiment_id' => $experiment->id,
             'experiment_name' => $experimentName,
             'status' => 'confirmed',
-            'metadata' => $metadata,
+            'metadata' => array_merge([
+                'flow_id' => $assignment->flow_id,
+                'confirmed_at' => now()->toDateTimeString(),
+            ], $metadata),
         ]);
     }
 
