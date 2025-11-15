@@ -133,7 +133,6 @@ class FlowController extends Controller
         $stats = [
             'experiments_count' => $experiments->count(),
             'assignments_count' => $flow->assignments()->count(),
-            'winners_count' => $flow->winners()->count(),
         ];
 
         return view('remote-config::flow.show', compact('flow', 'experiments', 'stats'));
@@ -206,12 +205,12 @@ class FlowController extends Controller
     {
         // Check if flow is being used
         $experimentsCount = $flow->experiments()->count();
-        $winnersCount = $flow->winners()->count();
+        $assignmentsCount = $flow->assignments()->count();
 
-        if ($experimentsCount > 0 || $winnersCount > 0) {
+        if ($experimentsCount > 0 || $assignmentsCount > 0) {
             return redirect()
                 ->back()
-                ->with('error', "Cannot delete flow. It is used by {$experimentsCount} experiments and {$winnersCount} winners.");
+                ->with('error', "Cannot delete flow. It is used by {$experimentsCount} experiments and has {$assignmentsCount} user assignments.");
         }
 
         $flow->delete();

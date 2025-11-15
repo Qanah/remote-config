@@ -64,14 +64,6 @@ class Flow extends Model
     }
 
     /**
-     * Winners using this flow.
-     */
-    public function winners(): HasMany
-    {
-        return $this->hasMany(Winner::class);
-    }
-
-    /**
      * Get the display label for the flow.
      * Format: "FLOW {type} #{id} {name}"
      */

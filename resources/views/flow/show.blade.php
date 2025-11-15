@@ -48,10 +48,6 @@
             <dt class="truncate text-sm font-medium text-gray-500">User Assignments</dt>
             <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ $stats['assignments_count'] }}</dd>
         </div>
-        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-            <dt class="truncate text-sm font-medium text-gray-500">Winner Deployments</dt>
-            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ $stats['winners_count'] }}</dd>
-        </div>
     </div>
 
     <!-- JSON Content -->
