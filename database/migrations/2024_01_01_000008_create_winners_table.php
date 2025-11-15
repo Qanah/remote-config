@@ -13,12 +13,10 @@ return new class extends Migration
     {
         $prefix = config('remote-config.table_prefix', '');
         $tableName = $prefix . 'winners';
-        $flowsTable = $prefix . 'flows';
 
         if (!Schema::hasTable($tableName)) {
-            Schema::create($tableName, function (Blueprint $table) use ($flowsTable) {
+            Schema::create($tableName, function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('flow_id')->nullable()->constrained($flowsTable)->onDelete('set null');
                 $table->string('type')->index();
                 $table->json('content');
                 $table->string('platform')->index();

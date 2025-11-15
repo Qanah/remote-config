@@ -23,7 +23,6 @@ return new class extends Migration
                 $table->json('countries')->nullable();
                 $table->json('languages')->nullable();
                 $table->date('user_created_after_date')->nullable();
-                $table->integer('overwrite_id')->nullable()->index();
                 $table->boolean('is_active')->default(true)->index();
                 $table->timestamps();
             });

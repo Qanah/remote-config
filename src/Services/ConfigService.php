@@ -71,15 +71,17 @@ class ConfigService
             return $config;
         }
 
-//        // Check for test override first (highest priority)
-//        if ($testOverrideIp && config('remote-config.testing_enabled', true)) {
-//            $testOverride = new TestOverride($testOverrideIp, $type);
-//            $testData = $testOverride->get();
-//
-//            if ($testData && isset($testData['content'])) {
-//                return array_replace_recursive($config, $testData['content']);
-//            }
-//        }
+        // Check for test override first (highest priority)
+        if ($testOverrideIp && config('remote-config.testing_enabled', true)) {
+            $testOverride = TestOverride::findByIpAndType($testOverrideIp, $type);
+
+            if ($testOverride && isset($testOverride['flow_id'])) {
+                $overrideFlow = Flow::find($testOverride['flow_id']);
+                if ($overrideFlow && $overrideFlow->content) {
+                    return array_replace_recursive($config, $overrideFlow->content);
+                }
+            }
+        }
 
         // Check for winner configuration (second priority)
         $platform = $this->extractAttribute($experimentable, 'platform', $attributes);

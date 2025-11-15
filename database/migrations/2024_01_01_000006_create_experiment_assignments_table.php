@@ -26,7 +26,6 @@ return new class extends Migration
 
                 $table->foreignId('experiment_id')->constrained($experimentsTable)->onDelete('cascade');
                 $table->foreignId('flow_id')->constrained($flowsTable)->onDelete('cascade');
-                $table->string('cookie_name')->nullable();
                 $table->timestamps();
 
                 $table->index('experiment_id');

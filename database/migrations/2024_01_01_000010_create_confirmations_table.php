@@ -14,9 +14,10 @@ return new class extends Migration
         $prefix = config('remote-config.table_prefix', '');
         $tableName = $prefix . 'confirmations';
         $experimentsTable = $prefix . 'experiments';
+        $flowsTable = $prefix . 'flows';
 
         if (!Schema::hasTable($tableName)) {
-            Schema::create($tableName, function (Blueprint $table) use ($experimentsTable) {
+            Schema::create($tableName, function (Blueprint $table) use ($experimentsTable, $flowsTable) {
                 $table->id();
                 // Polymorphic relation to user with custom short index name
                 $table->string('experimentable_type');
@@ -24,12 +25,10 @@ return new class extends Migration
                 $table->index(['experimentable_type', 'experimentable_id'], 'confirmations_experimentable_idx');
 
                 $table->foreignId('experiment_id')->nullable()->constrained($experimentsTable)->onDelete('set null');
-                $table->string('experiment_name');
+                $table->foreignId('flow_id')->nullable()->constrained($flowsTable)->onDelete('set null');
                 $table->string('status')->default('pending')->index();
                 $table->text('metadata')->nullable();
                 $table->timestamps();
-
-                $table->index(['experiment_name', 'status']);
             });
         }
     }
