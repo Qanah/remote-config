@@ -184,7 +184,8 @@ class ConfigController extends Controller
     }
 
     /**
-     * Report a validation issue.
+     * Report validation issue(s).
+     * Accepts both single issue and multiple issues in one request.
      *
      * @param Request $request
      * @return JsonResponse
@@ -200,28 +201,63 @@ class ConfigController extends Controller
             ], 401);
         }
 
-        $request->validate([
-            'path' => 'required|string',
-            'invalid_value' => 'required',
-            'platform' => 'nullable|string',
-            'type' => 'nullable|string',
-            'error_message' => 'nullable|string',
-        ]);
+        // Check if request body is an array (multiple issues) or object (single issue)
+        $input = $request->all();
+        $isBulk = isset($input[0]) && is_array($input[0]);
 
-        $issue = ValidationIssue::logIssue(
-            $user,
-            $request->input('path'),
-            $request->input('invalid_value'),
-            $request->input('platform'),
-            $request->input('type'),
-            $request->input('error_message')
-        );
+        if ($isBulk) {
+            // Validate multiple issues
+            $validated = $request->validate([
+                '*.path' => 'required|string',
+                '*.invalid_value' => 'nullable',
+                '*.platform' => 'nullable|string',
+                '*.type' => 'nullable|string',
+                '*.error_message' => 'nullable|string',
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Validation issue reported successfully',
-            'data' => $issue,
-        ]);
+            // Log each issue
+            $issues = [];
+            foreach ($validated as $issueData) {
+                $issues[] = ValidationIssue::logIssue(
+                    $user,
+                    $issueData['path'],
+                    $issueData['invalid_value'],
+                    $issueData['platform'] ?? null,
+                    $issueData['type'] ?? null,
+                    $issueData['error_message'] ?? null
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => count($issues) . ' validation issues reported successfully',
+                'data' => $issues,
+            ]);
+        } else {
+            // Validate single issue
+            $validated = $request->validate([
+                'path' => 'required|string',
+                'invalid_value' => 'nullable',
+                'platform' => 'nullable|string',
+                'type' => 'nullable|string',
+                'error_message' => 'nullable|string',
+            ]);
+
+            $issue = ValidationIssue::logIssue(
+                $user,
+                $validated['path'],
+                $validated['invalid_value'],
+                $validated['platform'] ?? null,
+                $validated['type'] ?? null,
+                $validated['error_message'] ?? null
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Validation issue reported successfully',
+                'data' => $issue,
+            ]);
+        }
     }
 
 }

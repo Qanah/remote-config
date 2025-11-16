@@ -19,7 +19,7 @@
 ### **2. API Layer** ✅
 - ✅ GET /api/config - Get configuration (supports single/multiple types, automatic test override support)
 - ✅ POST /api/config/confirm - Confirm experiment
-- ✅ POST /api/config/issue - Report issues
+- ✅ POST /api/config/issue - Report validation issues (supports single and bulk reporting)
 
 ### **3. Admin Panel** ✅
 - ✅ 4 admin controllers (Flow, Experiment, Winner, Testing)

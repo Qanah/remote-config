@@ -811,6 +811,82 @@ $experiment->flows()->attach($premiumFlow, ['ratio' => 100]);
 
 ## API Reference
 
+### API Endpoints
+
+#### `POST /api/config/issue` - Report Validation Issues
+
+Report validation issues from client applications. Supports both single and multiple issues in one request.
+
+**Single Issue:**
+```bash
+curl -X POST https://api.example.com/api/config/issue \
+  -H "Authorization: Bearer token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "features",
+    "invalid_value": [],
+    "platform": "android",
+    "type": "features",
+    "error_message": "Invalid data type: expected Map, got List"
+  }'
+
+# Response:
+{
+  "success": true,
+  "message": "Validation issue reported successfully",
+  "data": {
+    "id": 123,
+    "path": "features",
+    "invalid_value": [],
+    "platform": "android",
+    "type": "features",
+    "error_message": "Invalid data type: expected Map, got List",
+    "created_at": "2024-01-15T10:30:00.000000Z"
+  }
+}
+```
+
+**Multiple Issues (Bulk):**
+```bash
+curl -X POST https://api.example.com/api/config/issue \
+  -H "Authorization: Bearer token" \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "path": "features",
+      "invalid_value": [],
+      "platform": "android",
+      "type": "features",
+      "error_message": "Invalid data type: expected Map, got List"
+    },
+    {
+      "path": "ui",
+      "invalid_value": [],
+      "platform": "android",
+      "type": "ui",
+      "error_message": "Invalid data type: expected Map, got List"
+    }
+  ]'
+
+# Response:
+{
+  "success": true,
+  "message": "2 validation issues reported successfully",
+  "data": [
+    {
+      "id": 123,
+      "path": "features",
+      ...
+    },
+    {
+      "id": 124,
+      "path": "ui",
+      ...
+    }
+  ]
+}
+```
+
 ### Helper Functions
 
 #### `get_user_config($experimentable, string $type, array $attributes = [])`

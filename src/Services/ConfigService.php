@@ -261,14 +261,17 @@ class ConfigService
                 $testOverrideIp
             );
 
-            $assignment = $this->getOrCreateAssignment($experimentable, $type, $attributes);
+            if($config) {
 
-            $configs[$type] = $config;
-            $metadata[$type] = [
-                'has_experiment' => $assignment !== null,
-                'experiment_id' => $assignment?->experiment_id,
-                'flow_id' => $assignment?->flow_id,
-            ];
+                $assignment = $this->getOrCreateAssignment($experimentable, $type, $attributes);
+
+                $configs[$type] = $config;
+                $metadata[$type] = [
+                    'has_experiment' => $assignment !== null,
+                    'experiment_id' => $assignment?->experiment_id,
+                    'flow_id' => $assignment?->flow_id,
+                ];
+            }
         }
 
         return [

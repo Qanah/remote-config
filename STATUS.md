@@ -65,9 +65,9 @@ The core package is fully operational with API endpoints, database structure, bu
 - [x] **HasDynamicRelation** - Dynamic polymorphic relationships
 
 ### **7. API Endpoints** ✅ (3 endpoints)
-- [x] `GET /api/config` - Get configuration with experiments (includes automatic test override support)
+- [x] `GET /api/config` - Get configuration with experiments (supports single/multiple types, automatic test override support)
 - [x] `POST /api/config/confirm` - Confirm experiment
-- [x] `POST /api/config/issue` - Report validation issues
+- [x] `POST /api/config/issue` - Report validation issues (supports single and bulk reporting)
 
 **All endpoints:**
 - Fully documented in README
